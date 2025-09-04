@@ -1,0 +1,431 @@
+name: Terraform CI/CD
+
+on:
+  pull_request:
+    paths:
+      - 'infra/terraform/**'
+      - '.github/workflows/terraform.yml'
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/terraform/**'
+      - '.github/workflows/terraform.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+        - plan
+        - apply
+        - destroy
+
+env:
+  TF_VERSION: "1.13.0"
+  AWS_REGION: "us-east-1"
+  TF_IN_AUTOMATION: "true"
+  TF_CLI_ARGS: "-no-color"
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  terraform-check:
+    name: Terraform Format and Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+          
+      - name: Terraform Format Check
+        id: fmt
+        run: |
+          cd infra/terraform
+          if ! terraform fmt -check -recursive -diff; then
+            echo "format_failed=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        continue-on-error: true
+        
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-TerraformCheck
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Terraform Init (Dev)
+        run: |
+          cd infra/terraform
+          terraform init -backend-config=envs/dev/backend.hcl
+          
+      - name: Terraform Validate
+        id: validate
+        run: |
+          cd infra/terraform
+          terraform validate -json > validation_output.json
+          if [ $? -ne 0 ]; then
+            echo "validation_failed=true" >> $GITHUB_OUTPUT
+            cat validation_output.json
+            exit 1
+          fi
+        continue-on-error: true
+        
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+          
+      - name: TFLint
+        id: tflint
+        run: |
+          cd infra/terraform
+          tflint --init
+          tflint --format=compact
+        continue-on-error: true
+        
+      - name: Comment PR - Format Failed
+        if: github.event_name == 'pull_request' && steps.fmt.outputs.format_failed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ❌ Terraform Format Check Failed
+              
+              The Terraform files are not properly formatted. Please run:
+              \`\`\`bash
+              cd infra/terraform
+              terraform fmt -recursive
+              \`\`\`
+              
+              And commit the changes.`
+            });
+            
+      - name: Comment PR - Validation Failed
+        if: github.event_name == 'pull_request' && steps.validate.outputs.validation_failed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ❌ Terraform Validation Failed
+              
+              Please check the validation errors in the workflow logs and fix the configuration issues.`
+            });
+
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: terraform-check
+    if: always() && (needs.terraform-check.result == 'success' || github.event_name == 'workflow_dispatch')
+    strategy:
+      matrix:
+        environment: [dev]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+          
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-TerraformPlan-${{ matrix.environment }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Terraform Init
+        run: |
+          cd infra/terraform
+          terraform init -backend-config=envs/${{ matrix.environment }}/backend.hcl
+          
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd infra/terraform
+          terraform plan \
+            -var-file=envs/${{ matrix.environment }}/terraform.tfvars \
+            -out=tfplan-${{ matrix.environment }} \
+            -detailed-exitcode
+        continue-on-error: true
+        
+      - name: Save Plan Output
+        if: github.event_name == 'pull_request'
+        run: |
+          cd infra/terraform
+          terraform show -no-color tfplan-${{ matrix.environment }} > plan_output_${{ matrix.environment }}.txt
+          
+      - name: Upload Plan Artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ matrix.environment }}
+          path: infra/terraform/plan_output_${{ matrix.environment }}.txt
+          retention-days: 5
+          
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'infra/terraform/plan_output_${{ matrix.environment }}.txt';
+            
+            let planOutput = '';
+            try {
+              planOutput = fs.readFileSync(path, 'utf8');
+            } catch (error) {
+              planOutput = 'Unable to read plan output.';
+            }
+            
+            // Truncate if too long
+            if (planOutput.length > 60000) {
+              planOutput = planOutput.substring(0, 60000) + '\n... (truncated)';
+            }
+            
+            const output = `## 📋 Terraform Plan (${{ matrix.environment }})
+            
+            <details>
+            <summary>Click to expand plan output</summary>
+            
+            \`\`\`terraform
+            ${planOutput}
+            \`\`\`
+            
+            </details>
+            
+            **Plan Exit Code:** ${{ steps.plan.outputs.exitcode }}
+            - \`0\` - No changes
+            - \`1\` - Error
+            - \`2\` - Changes present
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: terraform-plan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    
+    strategy:
+      matrix:
+        environment: [dev]
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+          
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-TerraformApply-${{ matrix.environment }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Terraform Init
+        run: |
+          cd infra/terraform
+          terraform init -backend-config=envs/${{ matrix.environment }}/backend.hcl
+          
+      - name: Terraform Apply
+        run: |
+          cd infra/terraform
+          terraform apply \
+            -var-file=envs/${{ matrix.environment }}/terraform.tfvars \
+            -auto-approve
+            
+      - name: Terraform Output
+        id: output
+        run: |
+          cd infra/terraform
+          terraform output -json > terraform_outputs.json
+          
+      - name: Upload Outputs Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-outputs-${{ matrix.environment }}
+          path: infra/terraform/terraform_outputs.json
+          retention-days: 30
+
+  terraform-manual:
+    name: Manual Terraform Operation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: ${{ github.event.inputs.environment }}
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+          
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-Manual-${{ github.event.inputs.environment }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Terraform Init
+        run: |
+          cd infra/terraform
+          terraform init -backend-config=envs/${{ github.event.inputs.environment }}/backend.hcl
+          
+      - name: Terraform Plan (Manual)
+        if: github.event.inputs.action == 'plan'
+        run: |
+          cd infra/terraform
+          terraform plan -var-file=envs/${{ github.event.inputs.environment }}/terraform.tfvars
+          
+      - name: Terraform Apply (Manual)
+        if: github.event.inputs.action == 'apply'
+        run: |
+          cd infra/terraform
+          terraform apply \
+            -var-file=envs/${{ github.event.inputs.environment }}/terraform.tfvars \
+            -auto-approve
+            
+      - name: Terraform Destroy (Manual)
+        if: github.event.inputs.action == 'destroy'
+        run: |
+          cd infra/terraform
+          terraform destroy \
+            -var-file=envs/${{ github.event.inputs.environment }}/terraform.tfvars \
+            -auto-approve
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infra/terraform
+          framework: terraform
+          output_format: sarif
+          output_file_path: checkov_results.sarif
+          quiet: true
+          
+      - name: Upload Checkov Results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov_results.sarif
+          
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  cost-estimation:
+    name: Cost Estimation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+          
+      - name: Generate cost estimate
+        run: |
+          cd infra/terraform
+          infracost breakdown --path . --format json --out-file infracost.json
+          
+      - name: Post cost comment
+        uses: infracost/actions/comment@v2
+        with:
+          path: infra/terraform/infracost.json
+          behavior: update
+
+  notify-slack:
+    name: Notify Slack
+    runs-on: ubuntu-latest
+    needs: [terraform-apply]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Notify Slack on Success
+        if: needs.terraform-apply.result == 'success'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: '✅ NovaBot infrastructure deployed successfully to production'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          
+      - name: Notify Slack on Failure
+        if: needs.terraform-apply.result == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: '❌ NovaBot infrastructure deployment failed'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,0 +1,20 @@
+# AWS Configuration
+aws_region = "us-east-1"
+environment = "prod"
+project_name = "novabot"
+
+# Zendesk Configuration
+zendesk_subdomain = "your-zendesk-subdomain"
+
+# Bedrock Configuration
+bedrock_agent_model = "anthropic.claude-3-sonnet-20240229-v1:0"
+
+# S3 Configuration (leave empty to auto-generate bucket name)
+knowledge_base_s3_bucket = ""
+
+# Additional Tags
+tags = {
+  Owner       = "your-team"
+  CostCenter  = "engineering"
+  Application = "support-chatbot"
+}

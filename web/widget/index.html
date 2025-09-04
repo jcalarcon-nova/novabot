@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NovaBot Widget Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .hero {
+            background: white;
+            border-radius: 16px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .hero h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .hero p {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-card h3 {
+            color: #0066cc;
+            margin-bottom: 1rem;
+        }
+        
+        .demo-controls {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .demo-controls h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .control-group {
+            margin-bottom: 1rem;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .control-group input, 
+        .control-group select {
+            width: 100%;
+            max-width: 300px;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .btn {
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background: #0052a3;
+        }
+        
+        .btn.secondary {
+            background: #6c757d;
+        }
+        
+        .btn.secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn.success {
+            background: #28a745;
+        }
+        
+        .btn.success:hover {
+            background: #218838;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+        
+        .alert.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .footer {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Hero Section -->
+        <div class="hero">
+            <h1>🤖 NovaBot Widget Demo</h1>
+            <p>Experience our AI-powered support chatbot with real-time streaming responses, knowledge base integration, and Zendesk ticket creation.</p>
+            <button class="btn success" onclick="NovaBot.open()">Try NovaBot Now</button>
+        </div>
+        
+        <!-- Features -->
+        <div class="features">
+            <div class="feature-card">
+                <h3>🚀 Real-time Streaming</h3>
+                <p>Get instant responses with streaming text that appears as it's being generated, providing a natural conversational experience.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>📚 Knowledge Base Integration</h3>
+                <p>Access comprehensive documentation and support articles powered by Amazon Bedrock and S3 Vectors for accurate, contextual answers.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🎫 Zendesk Integration</h3>
+                <p>Seamlessly create support tickets directly from the chat when you need personalized assistance from our support team.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>📱 Mobile Responsive</h3>
+                <p>Fully responsive design that works perfectly on desktop, tablet, and mobile devices with touch-friendly controls.</p>
+            </div>
+        </div>
+        
+        <!-- Demo Controls -->
+        <div class="demo-controls">
+            <h3>Demo Controls</h3>
+            
+            <div class="control-group">
+                <label for="api-endpoint">API Endpoint:</label>
+                <input type="text" id="api-endpoint" placeholder="https://api.novabot.example.com/invoke-agent" />
+            </div>
+            
+            <div class="control-group">
+                <label for="api-key">API Key (optional):</label>
+                <input type="password" id="api-key" placeholder="Enter API key if required" />
+            </div>
+            
+            <div class="control-group">
+                <label for="widget-title">Widget Title:</label>
+                <input type="text" id="widget-title" value="NovaBot Support" />
+            </div>
+            
+            <div style="margin-top: 1.5rem;">
+                <button class="btn" onclick="updateConfiguration()">Update Configuration</button>
+                <button class="btn secondary" onclick="NovaBot.clearChat()">Clear Chat</button>
+                <button class="btn secondary" onclick="sendExampleMessage()">Send Example Message</button>
+                <button class="btn success" onclick="NovaBot.open()">Open Widget</button>
+            </div>
+        </div>
+        
+        <!-- Example Messages -->
+        <div class="demo-controls">
+            <h3>Quick Test Messages</h3>
+            <p>Try these example messages to test different functionality:</p>
+            
+            <button class="btn" onclick="NovaBot.sendMessage('Hello, I need help with MuleSoft configuration')">
+                General Support Question
+            </button>
+            
+            <button class="btn" onclick="NovaBot.sendMessage('I\'m getting a timeout error in my API integration. Can you help?')">
+                Technical Issue
+            </button>
+            
+            <button class="btn" onclick="NovaBot.sendMessage('I need to create a support ticket for a connection problem')">
+                Create Ticket Request
+            </button>
+            
+            <button class="btn" onclick="NovaBot.sendMessage('What are the best practices for DataWeave transformations?')">
+                Documentation Query
+            </button>
+        </div>
+        
+        <!-- Integration Code -->
+        <div class="demo-controls">
+            <h3>Integration Code</h3>
+            <p>To integrate NovaBot into your website, add this code to your HTML:</p>
+            
+            <div class="code-block">
+&lt;!-- NovaBot Widget CSS --&gt;
+&lt;link rel="stylesheet" href="https://cdn.novabot.example.com/widget.css"&gt;
+
+&lt;!-- NovaBot Widget Configuration --&gt;
+&lt;script&gt;
+  window.NOVABOT_API_ENDPOINT = 'https://api.novabot.example.com/invoke-agent';
+  window.NOVABOT_API_KEY = 'your-api-key-here'; // Optional
+  window.NOVABOT_TITLE = 'Support Assistant';
+  window.NOVABOT_AUTO_OPEN = false; // Set to true to auto-open
+&lt;/script&gt;
+
+&lt;!-- NovaBot Widget JavaScript --&gt;
+&lt;script src="https://cdn.novabot.example.com/widget.js"&gt;&lt;/script&gt;
+            </div>
+            
+            <div class="alert info">
+                <strong>API Configuration:</strong> Make sure to replace the API endpoint and key with your actual NovaBot deployment values. The widget will automatically handle authentication and session management.
+            </div>
+        </div>
+        
+        <!-- API Documentation -->
+        <div class="demo-controls">
+            <h3>JavaScript API</h3>
+            <p>Control the widget programmatically using these methods:</p>
+            
+            <div class="code-block">
+// Open or close the widget
+NovaBot.open();
+NovaBot.close();
+
+// Send a message programmatically
+NovaBot.sendMessage("Hello, how can I configure my API?");
+
+// Clear the chat history
+NovaBot.clearChat();
+
+// Update API endpoint dynamically
+NovaBot.setEndpoint("https://new-api.example.com/invoke-agent");
+
+// Destroy the widget instance
+NovaBot.destroy();
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>NovaBot is powered by Amazon Bedrock, AWS Lambda, and advanced AI technology.<br>
+            Built with ❤️ for exceptional customer support experiences.</p>
+        </div>
+    </div>
+    
+    <!-- NovaBot Widget Configuration -->
+    <script>
+        // Default configuration
+        window.NOVABOT_API_ENDPOINT = 'https://api.novabot.example.com/invoke-agent';
+        window.NOVABOT_TITLE = 'NovaBot Support';
+        window.NOVABOT_ANALYTICS = true;
+        window.NOVABOT_CSS_URL = 'widget.css'; // Local CSS for demo
+    </script>
+    
+    <!-- NovaBot Widget -->
+    <script src="widget.js"></script>
+    
+    <!-- Demo Functions -->
+    <script>
+        function updateConfiguration() {
+            const endpoint = document.getElementById('api-endpoint').value;
+            const apiKey = document.getElementById('api-key').value;
+            const title = document.getElementById('widget-title').value;
+            
+            if (endpoint) {
+                window.NOVABOT_API_ENDPOINT = endpoint;
+                NovaBot.setEndpoint(endpoint);
+            }
+            
+            if (apiKey) {
+                window.NOVABOT_API_KEY = apiKey;
+            }
+            
+            if (title) {
+                window.NOVABOT_TITLE = title;
+                // Update the widget title in the DOM
+                const titleElement = document.querySelector('.novabot-chat-header h3');
+                if (titleElement) {
+                    titleElement.textContent = title;
+                }
+            }
+            
+            alert('Configuration updated successfully!');
+        }
+        
+        function sendExampleMessage() {
+            const messages = [
+                "Hello, I'm having trouble with my MuleSoft integration. Can you help?",
+                "What's the best way to handle errors in Mule flows?",
+                "I need documentation for DataWeave functions",
+                "Can you create a support ticket for me?",
+                "How do I configure HTTP connectors in Anypoint Studio?"
+            ];
+            
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+            NovaBot.sendMessage(randomMessage);
+            NovaBot.open();
+        }
+        
+        // Auto-populate API endpoint input
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('api-endpoint').value = window.NOVABOT_API_ENDPOINT;
+            document.getElementById('widget-title').value = window.NOVABOT_TITLE;
+        });
+        
+        // Analytics tracking
+        function trackDemo(action) {
+            if (window.gtag) {
+                gtag('event', 'demo_interaction', {
+                    'action': action,
+                    'page': 'widget_demo'
+                });
+            }
+            console.log('Demo interaction:', action);
+        }
+    </script>
+</body>
+</html>

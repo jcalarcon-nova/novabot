@@ -1,0 +1,36 @@
+{
+  "name": "lex-fulfillment",
+  "version": "1.0.0",
+  "description": "Lambda function for Amazon Lex V2 fulfillment",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.450.0",
+    "@aws-sdk/client-lambda": "^3.450.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.126",
+    "@types/node": "^20.8.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "eslint": "^8.49.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "lex",
+    "lex-v2",
+    "connect",
+    "typescript"
+  ],
+  "author": "NovaBot Team",
+  "license": "MIT"
+}

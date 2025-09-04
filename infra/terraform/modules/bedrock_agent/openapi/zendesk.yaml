@@ -1,0 +1,112 @@
+openapi: 3.0.1
+info:
+  title: Zendesk Support Ticket API
+  version: "1.0.0"
+  description: API for creating Zendesk support tickets via NovaBot
+paths:
+  /support/tickets:
+    post:
+      summary: Create a Zendesk support ticket
+      operationId: createZendeskTicket
+      description: Creates a new support ticket in Zendesk with the provided details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requester_email, subject, description]
+              properties:
+                requester_email:
+                  type: string
+                  format: email
+                  description: Email address of the person requesting support
+                  example: "user@example.com"
+                subject:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                  description: Brief subject line for the support ticket
+                  example: "Unable to connect to MuleSoft API"
+                description:
+                  type: string
+                  minLength: 10
+                  maxLength: 5000
+                  description: Detailed description of the issue or request
+                  example: "I'm experiencing connection timeouts when trying to connect to the MuleSoft API endpoint. The error occurs consistently after 30 seconds."
+                priority:
+                  type: string
+                  enum: [low, normal, high, urgent]
+                  description: Priority level for the support ticket
+                  default: "normal"
+                  example: "high"
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 10
+                  description: Tags for categorizing the ticket
+                  example: ["api", "mulesoft", "connectivity"]
+                plugin_version:
+                  type: string
+                  description: Version of the plugin or software being used
+                  example: "4.2.1"
+                mule_runtime:
+                  type: string
+                  description: MuleSoft runtime version information
+                  example: "4.4.0"
+                custom_fields:
+                  type: object
+                  additionalProperties: true
+                  description: Additional custom fields for the ticket
+      responses:
+        "200":
+          description: Ticket created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket_id:
+                    type: string
+                    description: Unique identifier for the created ticket
+                    example: "12345"
+                  ticket_url:
+                    type: string
+                    format: uri
+                    description: Direct URL to view the ticket in Zendesk
+                    example: "https://company.zendesk.com/agent/tickets/12345"
+                  status:
+                    type: string
+                    description: Status of the ticket creation
+                    example: "created"
+                  message:
+                    type: string
+                    description: Human-readable confirmation message
+                    example: "Support ticket 12345 has been created successfully"
+        "400":
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Validation failed"
+                  message:
+                    type: string
+                    example: "Required field 'subject' is missing"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error"
+                  message:
+                    type: string
+                    example: "Failed to create ticket in Zendesk"

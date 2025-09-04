@@ -1,0 +1,36 @@
+{
+  "name": "zendesk-create-ticket",
+  "version": "1.0.0",
+  "description": "Lambda function to create Zendesk tickets via API",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.450.0",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.126",
+    "@types/node": "^20.8.0",
+    "@types/node-fetch": "^2.6.7",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "eslint": "^8.49.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "zendesk",
+    "typescript",
+    "bedrock"
+  ],
+  "author": "NovaBot Team",
+  "license": "MIT"
+}

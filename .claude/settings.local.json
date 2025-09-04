@@ -1,0 +1,57 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__serena__check_onboarding_performed",
+      "mcp__serena__onboarding",
+      "mcp__serena__list_dir",
+      "mcp__serena__write_memory",
+      "Bash(mkdir:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/log-tool-usage.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'input=$(cat); cmd=$(echo \"$input\" | jq -r \".tool_input.command // empty\"); if [[ \"$cmd\" =~ (rm|delete).*(\\*|\\.env|credentials|secret) ]]; then echo \"{\\\"action\\\": \\\"block\\\", \\\"message\\\": \\\"Dangerous command blocked: $cmd\\\"}\"; else echo \"{}\"; fi'"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'input=$(cat); agent=$(echo \"$input\" | jq -r \".subagent_name // empty\"); if [[ \"$agent\" == \"validation-gates\" ]]; then echo \"Validation gates completed. Running final checks...\" >&2; fi; echo \"{}\"'"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'input=$(cat); prompt=$(echo \"$input\" | jq -r \".prompt // empty\"); if [[ \"$prompt\" =~ (test|validate|check) ]] && [[ ! \"$prompt\" =~ (skip|no|without).*(test|validation) ]]; then echo \"Reminder: Use the validation-gates subagent to ensure comprehensive testing.\" >&2; fi; echo \"{}\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
