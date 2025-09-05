@@ -92,11 +92,57 @@ module "api_gateway" {
   project_name                     = var.project_name
   invoke_agent_lambda_function_arn = module.lambda_invoke_agent.function_arn
   domain_name                      = var.api_domain_name
-  certificate_arn                  = var.certificate_arn
+  certificate_arn                  = var.create_certificate && length(module.acm_certificate) > 0 ? module.acm_certificate[0].certificate_arn : var.certificate_arn
   enable_custom_domain             = var.enable_custom_domain
   tags                           = local.common_tags
   
   depends_on = [module.lambda_invoke_agent]
+}
+
+# Route 53 Hosted Zone (conditional - for certificate validation)
+module "route53_zone" {
+  count  = (var.create_certificate || var.enable_custom_domain) ? 1 : 0
+  source = "../../modules/route53"
+  
+  domain_name                    = var.root_domain_name
+  environment                    = var.environment
+  project_name                   = var.project_name
+  api_gateway_domain_name        = var.api_domain_name
+  api_gateway_target_domain_name = ""  # Will be set later
+  api_gateway_hosted_zone_id     = "Z1UJRXOUMOOFQ8"  # API Gateway v2 hosted zone for us-east-1
+  create_hosted_zone             = var.create_hosted_zone
+  existing_hosted_zone_id        = var.existing_hosted_zone_id
+  tags                          = local.common_tags
+}
+
+# ACM Certificate (conditional)
+module "acm_certificate" {
+  count  = var.create_certificate ? 1 : 0
+  source = "../../modules/acm_certificate"
+  
+  domain_name                = var.api_domain_name
+  hosted_zone_id             = var.create_hosted_zone ? module.route53_zone[0].hosted_zone_id : var.existing_hosted_zone_id
+  environment                = var.environment
+  project_name               = var.project_name
+  tags                      = local.common_tags
+  
+  depends_on = [module.route53_zone]
+}
+
+# Route 53 DNS Records (conditional - for API Gateway)
+resource "aws_route53_record" "api_gateway" {
+  count   = var.enable_custom_domain && module.api_gateway.custom_domain_target != null ? 1 : 0
+  zone_id = var.create_hosted_zone ? module.route53_zone[0].hosted_zone_id : var.existing_hosted_zone_id
+  name    = var.api_domain_name
+  type    = "A"
+
+  alias {
+    name                   = module.api_gateway.custom_domain_target
+    zone_id                = "Z1UJRXOUMOOFQ8"  # API Gateway v2 hosted zone for us-east-1
+    evaluate_target_health = true
+  }
+
+  depends_on = [module.api_gateway, module.route53_zone]
 }
 
 # Lambda permission for API Gateway (after both are created)
