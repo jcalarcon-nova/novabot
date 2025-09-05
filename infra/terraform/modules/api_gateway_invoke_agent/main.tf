@@ -260,24 +260,27 @@ resource "aws_api_gateway_usage_plan_key" "chatbot_usage_plan_key" {
   usage_plan_id = aws_api_gateway_usage_plan.chatbot_usage_plan[0].id
 }
 
-# Domain Name (optional - for custom domain)
-# Uncomment and configure if custom domain is needed
-# resource "aws_apigatewayv2_domain_name" "chatbot_domain" {
-#   domain_name = "api.novabot.example.com"
-#   
-#   domain_name_configuration {
-#     certificate_arn = aws_acm_certificate.api_cert.arn
-#     endpoint_type   = "REGIONAL"
-#     security_policy = "TLS_1_2"
-#   }
-# }
+# Domain Name for custom domain
+resource "aws_apigatewayv2_domain_name" "chatbot_domain" {
+  count       = var.enable_custom_domain ? 1 : 0
+  domain_name = var.domain_name
+  
+  domain_name_configuration {
+    certificate_arn = var.certificate_arn
+    endpoint_type   = "REGIONAL"
+    security_policy = "TLS_1_2"
+  }
+
+  tags = var.tags
+}
 
 # API Mapping for custom domain
-# resource "aws_apigatewayv2_api_mapping" "chatbot_mapping" {
-#   api_id      = aws_apigatewayv2_api.chatbot_api.id
-#   domain_name = aws_apigatewayv2_domain_name.chatbot_domain.id
-#   stage       = aws_apigatewayv2_stage.api_stage.id
-# }
+resource "aws_apigatewayv2_api_mapping" "chatbot_mapping" {
+  count       = var.enable_custom_domain ? 1 : 0
+  api_id      = aws_apigatewayv2_api.chatbot_api.id
+  domain_name = aws_apigatewayv2_domain_name.chatbot_domain[0].id
+  stage       = aws_apigatewayv2_stage.api_stage.id
+}
 
 # WAF Web ACL (optional)
 resource "aws_wafv2_web_acl" "chatbot_waf" {
