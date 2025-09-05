@@ -1,29 +1,117 @@
+# =============================================================================
+# NovaBot Development Environment Configuration
+# =============================================================================
+# This file contains configuration for the NovaBot development environment.
+# Copy this file to terraform.tfvars and update values as needed.
+
+# =============================================================================
 # AWS Configuration
+# =============================================================================
+# AWS region where all resources will be deployed
 aws_region = "us-east-1"
+
+# Environment identifier (dev, staging, prod)
 environment = "dev"
+
+# Project name used as prefix for all resources
 project_name = "novabot"
 
-# Zendesk Configuration
+# =============================================================================
+# Zendesk Integration Configuration
+# =============================================================================
+# Your Zendesk subdomain (e.g., if your Zendesk URL is https://acme.zendesk.com,
+# then your subdomain is "acme")
 zendesk_subdomain = "your-zendesk-subdomain"
 
-# Bedrock Configuration
+# Note: Zendesk API credentials are stored in AWS Secrets Manager
+# Create the secret manually or via Terraform after deployment:
+# aws secretsmanager create-secret --name "novabot/zendesk/credentials" \
+#   --secret-string '{"email":"your-email@domain.com","token":"your-api-token"}'
+
+# =============================================================================
+# Amazon Bedrock Configuration
+# =============================================================================
+# Bedrock model ID for the agent
+# Available models:
+# - anthropic.claude-3-sonnet-20240229-v1:0 (Claude 3 Sonnet)
+# - anthropic.claude-3-5-sonnet-20241022-v2:0 (Claude 3.5 Sonnet v2)
+# - anthropic.claude-3-haiku-20240307-v1:0 (Claude 3 Haiku - faster, lower cost)
 bedrock_agent_model = "anthropic.claude-3-sonnet-20240229-v1:0"
 
-# S3 Configuration (leave empty to auto-generate bucket name)
+# Note: Ensure you have requested access to the Bedrock models in your AWS account
+# Go to AWS Console > Bedrock > Model Access to request access
+
+# =============================================================================
+# S3 Knowledge Base Configuration
+# =============================================================================
+# S3 bucket name for knowledge base data storage
+# Leave empty to auto-generate bucket name: novabot-{environment}-kb-{random}
 knowledge_base_s3_bucket = ""
 
-# Domain Configuration
+# =============================================================================
+# Domain and SSL Configuration
+# =============================================================================
+# Custom domain name for the API Gateway
+# Development environment uses: api-novabot.dev.nova-aicoe.com
 api_domain_name = "api-novabot.dev.nova-aicoe.com"
-root_domain_name = "nova-aicoe.com"
-certificate_arn = ""  # ARN of SSL certificate (leave empty to auto-create)
-enable_custom_domain = false  # Set to true to enable custom domain
-create_certificate = false    # Set to true to create SSL certificate with ACM
-create_hosted_zone = false    # Set to true to create new Route 53 hosted zone
-existing_hosted_zone_id = ""  # Required if create_hosted_zone = false and enable_custom_domain = true
 
-# Additional Tags
+# Root domain name for SSL certificate creation
+root_domain_name = "nova-aicoe.com"
+
+# SSL Certificate Configuration
+# Option 1: Use existing certificate (provide ARN)
+certificate_arn = ""  # e.g., "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+
+# Option 2: Auto-create certificate (set create_certificate = true)
+create_certificate = false  # Set to true to create SSL certificate with ACM
+
+# Custom Domain Configuration
+enable_custom_domain = false  # Set to true to enable custom domain for API Gateway
+
+# Route 53 Configuration
+# Option 1: Create new hosted zone (set create_hosted_zone = true)
+create_hosted_zone = false  # Set to true to create new Route 53 hosted zone
+
+# Option 2: Use existing hosted zone (provide zone ID)
+existing_hosted_zone_id = ""  # e.g., "Z1234567890ABC" - required if create_hosted_zone = false and enable_custom_domain = true
+
+# =============================================================================
+# Resource Tagging
+# =============================================================================
+# Additional tags applied to all resources for cost tracking and management
 tags = {
-  Owner       = "your-team"
-  CostCenter  = "engineering"
-  Application = "support-chatbot"
+  Owner       = "your-team"          # Team responsible for resources
+  CostCenter  = "engineering"        # Cost center for billing
+  Application = "support-chatbot"    # Application identifier
+  Environment = "development"        # Environment type
+  Project     = "novabot"           # Project name
+  ManagedBy   = "terraform"         # Management tool
 }
+
+# =============================================================================
+# Domain Setup Examples
+# =============================================================================
+# 
+# Example 1: Use existing domain and certificate
+# enable_custom_domain = true
+# create_certificate = false
+# create_hosted_zone = false
+# certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/existing-cert"
+# existing_hosted_zone_id = "Z1234567890ABC"
+#
+# Example 2: Create new certificate with existing hosted zone
+# enable_custom_domain = true
+# create_certificate = true
+# create_hosted_zone = false
+# existing_hosted_zone_id = "Z1234567890ABC"
+#
+# Example 3: Create everything new (domain, zone, certificate)
+# enable_custom_domain = true
+# create_certificate = true
+# create_hosted_zone = true
+# 
+# Example 4: No custom domain (use default API Gateway URL)
+# enable_custom_domain = false
+# (all other domain settings ignored)
+#
+# =============================================================================

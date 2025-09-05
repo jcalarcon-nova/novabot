@@ -76,6 +76,134 @@ This guide covers common issues you might encounter while deploying or using Nov
    - Collection names must be unique within region
    - Change the collection name in terraform.tfvars
 
+### Domain Management and SSL Issues
+
+#### Issue: "ACM Certificate validation failed"
+**Symptoms**:
+- Certificate remains in "Pending validation" status
+- Domain validation DNS records not found
+- Terraform timeout during certificate creation
+
+**Solutions**:
+1. **Check DNS propagation**:
+   ```bash
+   # Verify DNS validation records exist
+   dig _acme-challenge.api-novabot.dev.nova-aicoe.com TXT
+   nslookup _acme-challenge.api-novabot.dev.nova-aicoe.com
+   ```
+
+2. **Verify hosted zone configuration**:
+   ```bash
+   # Check if hosted zone ID is correct
+   aws route53 get-hosted-zone --id Z1234567890ABC
+   aws route53 list-resource-record-sets --hosted-zone-id Z1234567890ABC
+   ```
+
+3. **Manual certificate validation**:
+   - Log into AWS Console → Certificate Manager
+   - Check certificate validation records
+   - Verify records match Route 53 entries
+
+4. **Increase validation timeout**:
+   ```hcl
+   # In acm_certificate module
+   validation_timeout = "10m"  # Increase from default 5m
+   ```
+
+#### Issue: "Route 53 DNS record creation failed"
+**Symptoms**:
+- DNS A-record creation fails
+- "AccessDenied" for Route 53 operations
+- Domain resolution issues
+
+**Solutions**:
+1. **Verify Route 53 permissions**:
+   ```bash
+   # Check current permissions
+   aws sts get-caller-identity
+   aws route53 list-hosted-zones
+   ```
+
+2. **Required Route 53 permissions**:
+   Add these policies to your AWS user/role:
+   - `AmazonRoute53FullAccess`
+   - `AmazonRoute53DomainsFullAccess`
+
+3. **Check hosted zone ownership**:
+   ```bash
+   # Verify you own the hosted zone
+   aws route53 get-hosted-zone --id YOUR_HOSTED_ZONE_ID
+   ```
+
+4. **Manual DNS record creation**:
+   ```bash
+   # Create A-record manually if Terraform fails
+   aws route53 change-resource-record-sets --hosted-zone-id Z1234567890ABC \
+     --change-batch file://change-batch.json
+   ```
+
+#### Issue: "Custom domain mapping failed in API Gateway"
+**Symptoms**:
+- API Gateway custom domain not accessible
+- "Not Found" errors on custom domain
+- Certificate not properly attached
+
+**Solutions**:
+1. **Verify certificate in correct region**:
+   ```bash
+   # ACM certificates must be in us-east-1 for global endpoints
+   aws acm list-certificates --region us-east-1
+   ```
+
+2. **Check domain name configuration**:
+   ```bash
+   # Verify API Gateway domain mapping
+   aws apigatewayv2 get-domain-names
+   aws apigatewayv2 get-api-mappings --domain-name api-novabot.dev.nova-aicoe.com
+   ```
+
+3. **Wait for DNS propagation**:
+   - DNS changes can take up to 48 hours to propagate globally
+   - Test from different locations
+   - Use online DNS propagation checkers
+
+4. **Check CloudFront distribution status** (for edge-optimized domains):
+   ```bash
+   # API Gateway creates CloudFront distributions for custom domains
+   aws cloudfront list-distributions
+   ```
+
+#### Issue: "Domain already exists" or "Domain name conflicts"
+**Symptoms**:
+- Terraform fails with domain name already exists
+- Certificate creation fails due to existing resources
+
+**Solutions**:
+1. **Import existing resources**:
+   ```bash
+   # Import existing ACM certificate
+   terraform import module.acm_certificate[0].aws_acm_certificate.cert arn:aws:acm:us-east-1:123456789012:certificate/existing-cert-id
+   
+   # Import existing Route 53 records
+   terraform import aws_route53_record.api_gateway Z1234567890ABC_api-novabot.dev.nova-aicoe.com_A
+   ```
+
+2. **Use different domain names**:
+   ```hcl
+   # In terraform.tfvars
+   api_domain_name = "api-novabot-v2.dev.nova-aicoe.com"
+   ```
+
+3. **Clean up existing resources**:
+   ```bash
+   # Delete existing certificate if safe to do so
+   aws acm delete-certificate --certificate-arn arn:aws:acm:region:account:certificate/cert-id
+   
+   # Delete DNS records
+   aws route53 change-resource-record-sets --hosted-zone-id Z1234567890ABC \
+     --change-batch file://delete-records.json
+   ```
+
 ### Lambda Function Issues
 
 #### Issue: Lambda deployment fails with package size errors

@@ -25,14 +25,20 @@ NovaBot is a comprehensive, enterprise-ready AI support chatbot system built on 
 
 ```mermaid
 graph TB
-    A[Web Widget] --> B[API Gateway]
-    B --> C[Invoke Agent Lambda]
+    A[Web Widget] --> B[API Gateway v2]
+    B --> |api-novabot.{env}.nova-aicoe.com| C[Invoke Agent Lambda]
     C --> D[Bedrock Agent]
     D --> E[Knowledge Base]
     D --> F[Zendesk Action]
     F --> G[Zendesk Lambda]
     E --> H[S3 Vector Storage]
     H --> I[OpenSearch Serverless]
+    
+    subgraph "DNS & SSL Management"
+        J[Route 53] --> B
+        K[ACM Certificate] --> B
+        L[Domain Validation] --> K
+    end
 ```
 
 ## 📋 Prerequisites
@@ -48,11 +54,13 @@ graph TB
 - Amazon Bedrock Knowledge Bases
 - AWS Lambda
 - Amazon S3
-- Amazon API Gateway
+- Amazon API Gateway v2
 - AWS Secrets Manager
 - Amazon CloudWatch
 - OpenSearch Serverless
 - AWS IAM
+- Route 53 (for custom domain management)
+- AWS Certificate Manager (ACM) for SSL certificates
 
 ### Third-Party Services
 - **Zendesk Account**: For ticket creation integration
@@ -96,17 +104,17 @@ ZENDESK_EMAIL=your-email@company.com
 
 ### 5. Deploy Infrastructure
 ```bash
-# Navigate to Terraform directory
-cd infra/terraform
+# Navigate to Terraform environment directory
+cd infra/terraform/envs/dev
 
-# Initialize Terraform
-terraform init -backend-config=envs/dev/backend.hcl
+# Initialize Terraform with backend configuration
+terraform init
 
 # Review the planned changes
-terraform plan -var-file=envs/dev/terraform.tfvars
+terraform plan -var-file=terraform.tfvars
 
 # Apply the infrastructure
-terraform apply -var-file=envs/dev/terraform.tfvars
+terraform apply -var-file=terraform.tfvars
 ```
 
 ### 6. Upload Knowledge Base Data
@@ -137,12 +145,65 @@ Add the widget to your website:
 <script src="https://your-domain.com/novabot/widget.js"></script>
 <script>
 NovaBot.init({
-    apiUrl: 'https://your-api-gateway-url',
+    apiUrl: 'https://api-novabot.dev.nova-aicoe.com',
     theme: 'light',
     position: 'bottom-right'
 });
 </script>
 ```
+
+## 🌐 Domain Management & SSL Configuration
+
+### Custom Domain Setup
+
+NovaBot supports automated domain management with the nova-aicoe.com domain structure:
+
+- **Development**: `api-novabot.dev.nova-aicoe.com`
+- **Production**: `api-novabot.prod.nova-aicoe.com`
+
+### SSL Certificate Management
+
+The system includes automated SSL certificate provisioning using AWS Certificate Manager (ACM):
+
+#### Option 1: Automatic Certificate Creation
+```hcl
+# In terraform.tfvars
+enable_custom_domain = true
+create_certificate = true
+create_hosted_zone = false  # Use existing hosted zone
+existing_hosted_zone_id = "Z1234567890ABC"
+```
+
+#### Option 2: Use Existing Certificate
+```hcl
+# In terraform.tfvars
+enable_custom_domain = true
+create_certificate = false
+certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+```
+
+#### Option 3: Create New Hosted Zone
+```hcl
+# In terraform.tfvars
+enable_custom_domain = true
+create_certificate = true
+create_hosted_zone = true  # Creates new Route 53 hosted zone
+```
+
+### Route 53 Configuration
+
+The Route 53 module automatically:
+- Creates DNS records for API Gateway custom domains
+- Handles certificate validation records
+- Manages A-record aliases to API Gateway endpoints
+- Supports both new and existing hosted zones
+
+### Domain Workflow
+
+1. **Route 53 Module**: Creates or uses existing hosted zone
+2. **ACM Certificate Module**: Requests and validates SSL certificates
+3. **API Gateway**: Configures custom domain with certificate
+4. **DNS Records**: Automatically creates A-records pointing to API Gateway
 
 ## 📚 Documentation
 
@@ -150,6 +211,7 @@ NovaBot.init({
 - [Complete Setup Guide](./docs/setup/complete-setup.md)
 - [AWS Configuration](./docs/setup/aws-configuration.md)
 - [Terraform Deployment](./docs/setup/terraform-deployment.md)
+- [Domain Configuration Guide](./docs/setup/domain-configuration.md)
 - [Environment Configuration](./docs/setup/environment-configuration.md)
 
 ### Architecture Documentation
@@ -181,6 +243,10 @@ NovaBot.init({
 | `ENVIRONMENT` | Environment (dev/prod) | `dev` | Yes |
 | `ZENDESK_DOMAIN` | Your Zendesk subdomain | - | Yes |
 | `ZENDESK_EMAIL` | Zendesk user email | - | Yes |
+| `API_DOMAIN_NAME` | Custom API Gateway domain | `api-novabot.{env}.nova-aicoe.com` | No |
+| `ROOT_DOMAIN_NAME` | Root domain for SSL certificates | `nova-aicoe.com` | No |
+| `ENABLE_CUSTOM_DOMAIN` | Enable custom domain | `false` | No |
+| `CREATE_CERTIFICATE` | Auto-create SSL certificate | `false` | No |
 | `ENABLE_CONNECT` | Enable Amazon Connect | `false` | No |
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 
@@ -194,25 +260,29 @@ project_name = "novabot"
 environment = "dev"
 aws_region = "us-east-1"
 
-# Knowledge Base Configuration
-knowledge_base_name = "novabot-knowledge-base"
-enable_knowledge_base = true
+# Zendesk Configuration
+zendesk_subdomain = "your-zendesk-subdomain"
 
 # Bedrock Configuration
-bedrock_agent_name = "novabot-agent"
-bedrock_model_id = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+bedrock_agent_model = "anthropic.claude-3-sonnet-20240229-v1:0"
 
-# API Configuration
-api_name = "novabot-api"
-enable_cors = true
+# S3 Configuration (leave empty to auto-generate)
+knowledge_base_s3_bucket = ""
 
-# Security Configuration
-enable_waf = true
-enable_cloudtrail = true
+# Domain Configuration
+api_domain_name = "api-novabot.dev.nova-aicoe.com"
+root_domain_name = "nova-aicoe.com"
+enable_custom_domain = false
+create_certificate = false
+create_hosted_zone = false
+existing_hosted_zone_id = ""
 
-# Monitoring Configuration
-enable_detailed_monitoring = true
-log_retention_days = 30
+# Additional Tags
+tags = {
+  Owner       = "your-team"
+  CostCenter  = "engineering"
+  Application = "support-chatbot"
+}
 ```
 
 ## 🧪 Testing
@@ -249,16 +319,27 @@ npm run test:coverage
 1. **Bedrock Model Access**: Ensure you have requested access to required models
 2. **IAM Permissions**: Verify your AWS credentials have sufficient permissions
 3. **Region Availability**: Confirm Bedrock is available in your chosen region
+4. **S3 Backend**: Ensure the Terraform S3 backend bucket exists and is accessible
+5. **Duplicate Resources**: Check for existing resources with same names
+
+#### Custom Domain Issues
+1. **Route 53 Permissions**: Verify permissions to create/modify DNS records
+2. **Certificate Validation**: Allow up to 30 minutes for ACM certificate validation
+3. **Domain Ownership**: Ensure you control the domain and hosted zone
+4. **Hosted Zone Configuration**: Verify existing_hosted_zone_id is correct
+5. **API Gateway Domain**: Check custom domain mapping is properly configured
 
 #### Widget Not Loading
 1. **CORS Configuration**: Check API Gateway CORS settings
-2. **API Key**: Verify the API Gateway is properly configured
-3. **Network**: Check for firewall or network restrictions
+2. **Domain Configuration**: Verify the API URL matches deployed domain
+3. **SSL Certificate**: Ensure certificate is valid and properly configured
+4. **Network**: Check for firewall or network restrictions
 
 #### Knowledge Base Issues
 1. **File Format**: Ensure uploaded files are in supported formats (PDF, TXT, CSV, DOCX)
 2. **Indexing**: Allow up to 15 minutes for content indexing
 3. **Permissions**: Verify S3 bucket permissions and IAM roles
+4. **OpenSearch Access**: Check OpenSearch Serverless collection permissions
 
 ### Getting Help
 
@@ -372,6 +453,31 @@ For support and questions:
 - [ ] Advanced AI model fine-tuning
 - [ ] Comprehensive partner ecosystem
 - [ ] Global edge deployment
+
+## 🆕 Recent Updates
+
+### Infrastructure Enhancements (January 2025)
+- **🌐 Domain Management**: Automated SSL certificate provisioning with ACM
+- **🔒 Enhanced Security**: TLS 1.3 encryption and DNS validation
+- **⚙️ Terraform Improvements**: Modular architecture with environment separation
+- **📋 Configuration Management**: Comprehensive `.tfvars` templates with documentation
+- **🛠️ New Modules**: Route 53 DNS management and ACM certificate automation
+- **🔧 Simplified Deployment**: Streamlined deployment workflow with conditional resource creation
+
+### Key Infrastructure Modules
+| Module | Purpose | Features |
+|--------|---------|----------|
+| `route53` | DNS Management | Hosted zone management, A-records, certificate validation |
+| `acm_certificate` | SSL Certificates | Automated provisioning, DNS validation, lifecycle management |
+| `api_gateway_invoke_agent` | API Management | HTTP API v2, custom domains, CORS, rate limiting |
+| `kb_s3_vectors` | Knowledge Base | S3 storage, OpenSearch Serverless, vector embeddings |
+| `bedrock_agent` | AI Agent | Claude 3.5 integration, actions, knowledge base RAG |
+
+### Domain Architecture
+```
+Production:  api-novabot.prod.nova-aicoe.com
+Development: api-novabot.dev.nova-aicoe.com
+```
 
 ---
 

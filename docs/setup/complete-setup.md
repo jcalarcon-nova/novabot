@@ -101,106 +101,195 @@ aws secretsmanager create-secret \
     }'
 ```
 
-### Step 4: Terraform Configuration
+### Step 4: Domain Configuration (Optional but Recommended)
 
-1. **Navigate to Terraform directory**:
+Before configuring Terraform, decide on your domain strategy:
+
+#### Option A: Use Default API Gateway URL (Simplest)
+Skip to Step 5 if you don't need custom domains.
+
+#### Option B: Use Custom Domain with Existing Certificate
+If you have an existing SSL certificate:
+
+1. **Get certificate ARN**:
    ```bash
-   cd infra/terraform
+   aws acm list-certificates --region us-east-1
    ```
 
-2. **Configure backend (if using remote state)**:
+2. **Get hosted zone ID**:
    ```bash
-   # Create S3 bucket for Terraform state (replace with unique name)
-   aws s3 mb s3://novabot-terraform-state-your-unique-suffix
-
-   # Create DynamoDB table for state locking
-   aws dynamodb create-table \
-       --table-name novabot-terraform-locks \
-       --attribute-definitions AttributeName=LockID,AttributeType=S \
-       --key-schema AttributeName=LockID,KeyType=HASH \
-       --billing-mode PAY_PER_REQUEST
+   aws route53 list-hosted-zones --query "HostedZones[?Name=='nova-aicoe.com.'].Id" --output text
    ```
 
-3. **Update backend configuration**:
-   Edit `envs/dev/backend.hcl`:
-   ```hcl
-   bucket = "novabot-terraform-state-your-unique-suffix"
-   key    = "dev/terraform.tfstate"
-   region = "us-east-1"
-   dynamodb_table = "novabot-terraform-locks"
-   encrypt = true
+#### Option C: Auto-create Everything (Recommended)
+Let NovaBot create the SSL certificate and manage DNS automatically.
+
+### Step 5: Terraform Configuration
+
+1. **Navigate to Terraform environment directory**:
+   ```bash
+   cd infra/terraform/envs/dev
    ```
 
-4. **Configure environment variables**:
-   Edit `envs/dev/terraform.tfvars`:
+2. **Copy configuration template**:
+   ```bash
+   # Copy the example file
+   cp terraform.tfvars.example terraform.tfvars
+   ```
+
+3. **Configure environment variables**:
+   Edit `terraform.tfvars` with your specific values:
+
+   **Basic Configuration (No Custom Domain)**:
    ```hcl
    # Core Configuration
    project_name = "novabot"
    environment = "dev"
    aws_region = "us-east-1"
 
-   # Knowledge Base Configuration
-   knowledge_base_name = "novabot-kb-dev"
-   enable_knowledge_base = true
+   # Zendesk Configuration
+   zendesk_subdomain = "your-company"  # From your-company.zendesk.com
 
    # Bedrock Configuration
-   bedrock_agent_name = "novabot-agent-dev"
-   bedrock_model_id = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+   bedrock_agent_model = "anthropic.claude-3-sonnet-20240229-v1:0"
 
-   # API Configuration
-   api_name = "novabot-api-dev"
-   enable_cors = true
+   # S3 Configuration (auto-generated if empty)
+   knowledge_base_s3_bucket = ""
 
-   # Zendesk Configuration
-   zendesk_secret_name = "novabot/zendesk/credentials"
+   # Domain Configuration (disabled)
+   enable_custom_domain = false
 
    # Tags
    tags = {
-     Environment = "dev"
+     Environment = "development"
      Project     = "NovaBot"
      ManagedBy   = "Terraform"
+     Owner       = "your-team"
    }
    ```
 
-### Step 5: Infrastructure Deployment
+   **Advanced Configuration (With Custom Domain)**:
+   ```hcl
+   # Core Configuration
+   project_name = "novabot"
+   environment = "dev" 
+   aws_region = "us-east-1"
+
+   # Zendesk Configuration
+   zendesk_subdomain = "your-company"
+
+   # Bedrock Configuration
+   bedrock_agent_model = "anthropic.claude-3-sonnet-20240229-v1:0"
+
+   # S3 Configuration
+   knowledge_base_s3_bucket = ""
+
+   # Domain Configuration (enabled with auto SSL)
+   api_domain_name = "api-novabot.dev.nova-aicoe.com"
+   root_domain_name = "nova-aicoe.com"
+   enable_custom_domain = true
+   create_certificate = true
+   create_hosted_zone = false  # Use existing zone
+   existing_hosted_zone_id = "Z1234567890ABC"  # Your Route 53 zone ID
+
+   # Tags
+   tags = {
+     Environment = "development"
+     Project     = "NovaBot"
+     ManagedBy   = "Terraform"
+     Owner       = "your-team"
+   }
+   ```
+
+4. **Verify Route 53 setup** (if using custom domains):
+   ```bash
+   # Check if hosted zone exists
+   aws route53 get-hosted-zone --id Z1234567890ABC
+
+   # Verify domain ownership
+   dig NS nova-aicoe.com
+   ```
+
+### Step 6: Infrastructure Deployment
 
 1. **Initialize Terraform**:
    ```bash
-   terraform init -backend-config=envs/dev/backend.hcl
+   # You should already be in infra/terraform/envs/dev
+   terraform init
    ```
 
 2. **Plan the deployment**:
    ```bash
-   terraform plan -var-file=envs/dev/terraform.tfvars
+   terraform plan -var-file=terraform.tfvars
    ```
+
+   Review the planned changes carefully. With custom domains enabled, you should see:
+   - Route 53 hosted zone (if creating new)
+   - ACM certificate with validation records
+   - API Gateway custom domain configuration
+   - DNS A-record for the API domain
 
 3. **Apply the infrastructure**:
    ```bash
-   terraform apply -var-file=envs/dev/terraform.tfvars
+   terraform apply -var-file=terraform.tfvars
    ```
 
-   This process typically takes 10-15 minutes. The deployment creates:
+   **Deployment Timeline**:
+   - **Basic resources** (5-10 minutes): IAM, S3, Lambda functions
+   - **Bedrock components** (3-5 minutes): Knowledge Base, Agent
+   - **SSL Certificate validation** (5-30 minutes): DNS validation
+   - **Total time**: 15-45 minutes (depending on certificate validation)
+
+   The deployment creates:
    - IAM roles and policies
    - S3 bucket for knowledge base
    - OpenSearch Serverless collection
    - Bedrock Knowledge Base
-   - Lambda functions
-   - Bedrock Agent
-   - API Gateway
+   - Lambda functions (3 functions)
+   - Bedrock Agent with actions
+   - API Gateway v2 with custom domain (if enabled)
+   - Route 53 DNS records (if custom domain enabled)
+   - ACM SSL certificate (if create_certificate = true)
 
-4. **Save important outputs**:
+4. **Monitor deployment progress**:
    ```bash
-   # Get API Gateway URL
+   # Watch certificate validation (if creating certificate)
+   aws acm describe-certificate --certificate-arn $(terraform output -raw certificate_arn) --query 'Certificate.Status'
+
+   # Check DNS propagation
+   dig api-novabot.dev.nova-aicoe.com
+   ```
+
+5. **Save important outputs**:
+   ```bash
+   # Get API Gateway URLs
    terraform output api_gateway_url
+   terraform output api_gateway_custom_domain_url  # If custom domain enabled
 
    # Get S3 bucket name
    terraform output knowledge_base_bucket_name
 
    # Get Bedrock Agent ID
    terraform output bedrock_agent_id
+
+   # Get certificate ARN (if created)
+   terraform output certificate_arn
+
+   # Get hosted zone details
+   terraform output hosted_zone_id
+   terraform output name_servers
    ```
 
-### Step 6: Knowledge Base Population
+6. **Verify SSL certificate** (if using custom domain):
+   ```bash
+   # Test SSL certificate
+   curl -I https://api-novabot.dev.nova-aicoe.com/health
+
+   # Check certificate details
+   openssl s_client -connect api-novabot.dev.nova-aicoe.com:443 -servername api-novabot.dev.nova-aicoe.com < /dev/null 2>/dev/null | openssl x509 -text -noout
+   ```
+
+### Step 7: Knowledge Base Population
 
 1. **Upload sample data**:
    ```bash
@@ -220,7 +309,7 @@ aws secretsmanager create-secret \
 3. **Trigger knowledge base sync**:
    The knowledge base will automatically index the uploaded files. This process can take 5-15 minutes.
 
-### Step 7: Lambda Function Deployment
+### Step 8: Lambda Function Deployment
 
 The Lambda functions are deployed automatically by Terraform, but you can verify they're working:
 
@@ -244,25 +333,44 @@ The Lambda functions are deployed automatically by Terraform, but you can verify
    cat response.json
    ```
 
-### Step 8: Web Widget Deployment
+### Step 9: Web Widget Deployment
 
-1. **Configure widget**:
+1. **Get the API URL**:
+   ```bash
+   # Get the appropriate API URL based on your configuration
+   
+   # If using custom domain:
+   API_URL=$(terraform output -raw api_gateway_custom_domain_url)
+   echo "Custom Domain API URL: $API_URL"
+   
+   # If using default API Gateway URL:
+   API_URL=$(terraform output -raw api_gateway_url)
+   echo "Default API Gateway URL: $API_URL"
+   ```
+
+2. **Configure widget**:
    Edit `web/widget/widget.js` to update the API URL:
    ```javascript
    // Update this line with your API Gateway URL
-   const API_BASE_URL = 'https://your-api-gateway-url';
+   const API_BASE_URL = 'https://api-novabot.dev.nova-aicoe.com';  // Or your custom domain
    ```
 
-2. **Deploy widget files**:
+3. **Deploy widget files**:
    ```bash
+   # Navigate back to project root if you're still in terraform directory
+   cd ../../../
+
    # Copy widget files to your web server or CDN
    cp web/widget/* /path/to/your/webserver/novabot/
 
    # Or upload to S3 for CDN distribution
    aws s3 cp web/widget/ s3://your-cdn-bucket/novabot/ --recursive
+   
+   # Or serve directly from the project for testing
+   python3 -m http.server 8080 --directory web/widget
    ```
 
-3. **Add widget to your website**:
+4. **Add widget to your website**:
    ```html
    <!DOCTYPE html>
    <html>
@@ -276,7 +384,8 @@ The Lambda functions are deployed automatically by Terraform, but you can verify
        <script src="https://your-domain.com/novabot/widget.js"></script>
        <script>
        NovaBot.init({
-           apiUrl: 'https://your-api-gateway-url',
+           // Use your deployed API URL (custom domain or default)
+           apiUrl: 'https://api-novabot.dev.nova-aicoe.com',
            theme: 'light',
            position: 'bottom-right',
            title: 'Need Help?',
@@ -287,7 +396,33 @@ The Lambda functions are deployed automatically by Terraform, but you can verify
    </html>
    ```
 
-### Step 9: Testing and Validation
+5. **Test widget locally** (optional):
+   ```html
+   <!-- For local testing with custom domains -->
+   <!DOCTYPE html>
+   <html>
+   <head>
+       <title>NovaBot Test Page</title>
+   </head>
+   <body>
+       <h1>NovaBot Widget Test</h1>
+       <p>The chat widget should appear in the bottom right corner.</p>
+       
+       <script src="widget.js"></script>
+       <script>
+       NovaBot.init({
+           apiUrl: 'https://api-novabot.dev.nova-aicoe.com',
+           theme: 'light',
+           position: 'bottom-right',
+           title: 'Test Assistant',
+           subtitle: 'Testing the NovaBot widget'
+       });
+       </script>
+   </body>
+   </html>
+   ```
+
+### Step 10: Testing and Validation
 
 1. **Test the complete flow**:
    - Open your website with the widget
@@ -317,7 +452,7 @@ The Lambda functions are deployed automatically by Terraform, but you can verify
    cat output.json
    ```
 
-### Step 10: GitHub Actions Setup (Optional)
+### Step 11: GitHub Actions Setup (Optional)
 
 1. **Configure GitHub secrets**:
    In your GitHub repository settings, add these secrets:

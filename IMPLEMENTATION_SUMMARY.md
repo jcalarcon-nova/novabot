@@ -13,10 +13,12 @@ All components specified in the Problem Resolution Pattern (PRP) have been succe
 ### Core Infrastructure
 - ✅ **AWS Bedrock Agent**: Complete with Claude 3.5 Sonnet v2 integration
 - ✅ **Knowledge Base**: S3 + OpenSearch Serverless vector storage
-- ✅ **API Gateway**: HTTP API with CORS and rate limiting
+- ✅ **API Gateway**: HTTP API v2 with CORS and rate limiting
 - ✅ **Lambda Functions**: TypeScript functions for all integrations
 - ✅ **IAM Security**: Least-privilege access controls
 - ✅ **Secrets Management**: AWS Secrets Manager integration
+- ✅ **Domain Management**: Route 53 and ACM certificate automation
+- ✅ **SSL/TLS Security**: Automated certificate provisioning and validation
 
 ### AI and ML Components
 - ✅ **Bedrock Agent Configuration**: Properly configured with instructions and actions
@@ -60,18 +62,26 @@ NovaBot/
 │   └── api/reference.md              # Complete API documentation
 │
 ├── infra/terraform/                  # Infrastructure as Code
-│   ├── versions.tf                   # Provider versions
-│   ├── main.tf                       # Main configuration
-│   ├── outputs.tf                    # System outputs
 │   ├── envs/dev/                     # Development environment
 │   │   ├── main.tf                   # Environment-specific config
-│   │   ├── terraform.tfvars          # Environment variables
+│   │   ├── variables.tf              # Environment variables
+│   │   ├── outputs.tf                # Environment outputs
+│   │   ├── versions.tf               # Provider versions
+│   │   ├── terraform.tfvars.example  # Configuration template
 │   │   └── backend.hcl               # State backend config
+│   ├── envs/prod/                    # Production environment
+│   │   └── [similar structure]       # Production-specific configs
 │   └── modules/                      # Reusable Terraform modules
-│       ├── iam_security/             # IAM roles and policies
-│       ├── s3_knowledge_base/        # S3 and Knowledge Base
+│       ├── iam/                      # IAM roles and policies
+│       ├── kb_s3_vectors/            # S3 and Knowledge Base
 │       ├── bedrock_agent/            # Bedrock Agent with OpenAPI
-│       ├── api_gateway/              # HTTP API Gateway
+│       ├── api_gateway_invoke_agent/ # HTTP API Gateway v2
+│       ├── route53/                  # DNS management and records
+│       ├── acm_certificate/          # SSL certificate automation
+│       ├── lambda_invoke_agent/      # Agent invocation Lambda
+│       ├── lambda_zendesk_create_ticket/ # Zendesk integration
+│       ├── lambda_lex_fulfillment/   # Lex fulfillment handler
+│       ├── observability/            # Monitoring and logging
 │       └── connect_scaffold/         # Amazon Connect (future)
 │
 ├── lambda/                           # Lambda function implementations
@@ -137,13 +147,32 @@ NovaBot/
 - **Actions**: Zendesk ticket creation
 
 #### API Gateway Module
-- **Location**: `infra/terraform/modules/api_gateway/`
+- **Location**: `infra/terraform/modules/api_gateway_invoke_agent/`
 - **Features**:
-  - HTTP API with CORS
+  - HTTP API v2 with CORS
   - Lambda integrations
   - Rate limiting
-  - Custom domain support (optional)
+  - Custom domain support with SSL
+  - Conditional domain creation
 - **Endpoints**: `/chat`, `/health`
+
+#### Route 53 DNS Module
+- **Location**: `infra/terraform/modules/route53/`
+- **Features**:
+  - DNS hosted zone management
+  - A-record creation for API Gateway
+  - Support for existing or new hosted zones
+  - Certificate validation record management
+- **Domain Structure**: `api-novabot.{env}.nova-aicoe.com`
+
+#### ACM Certificate Module
+- **Location**: `infra/terraform/modules/acm_certificate/`
+- **Features**:
+  - Automated SSL certificate creation
+  - DNS validation with Route 53
+  - Certificate lifecycle management
+  - Multi-domain support (SAN certificates)
+- **Security**: TLS 1.3 encryption for all API traffic
 
 #### Amazon Connect Scaffold
 - **Location**: `infra/terraform/modules/connect_scaffold/`

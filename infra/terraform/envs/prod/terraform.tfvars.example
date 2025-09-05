@@ -1,29 +1,120 @@
+# =============================================================================
+# NovaBot Production Environment Configuration
+# =============================================================================
+# This file contains configuration for the NovaBot production environment.
+# Copy this file to terraform.tfvars and update values as needed.
+# 
+# IMPORTANT: Review all settings carefully for production deployment!
+
+# =============================================================================
 # AWS Configuration
+# =============================================================================
+# AWS region where all resources will be deployed
 aws_region = "us-east-1"
+
+# Environment identifier (always "prod" for production)
 environment = "prod"
+
+# Project name used as prefix for all resources
 project_name = "novabot"
 
-# Zendesk Configuration
+# =============================================================================
+# Zendesk Integration Configuration
+# =============================================================================
+# Your Zendesk subdomain (e.g., if your Zendesk URL is https://acme.zendesk.com,
+# then your subdomain is "acme")
 zendesk_subdomain = "your-zendesk-subdomain"
 
-# Bedrock Configuration
+# Note: Zendesk API credentials are stored in AWS Secrets Manager
+# For production, use a dedicated Zendesk account with appropriate permissions
+# aws secretsmanager create-secret --name "novabot/prod/zendesk/credentials" \
+#   --secret-string '{"email":"support@yourdomain.com","token":"your-production-api-token"}'
+
+# =============================================================================
+# Amazon Bedrock Configuration
+# =============================================================================
+# Bedrock model ID for the agent
+# Production recommendations:
+# - anthropic.claude-3-5-sonnet-20241022-v2:0 (Latest Claude 3.5 Sonnet - recommended)
+# - anthropic.claude-3-sonnet-20240229-v1:0 (Claude 3 Sonnet - stable)
 bedrock_agent_model = "anthropic.claude-3-sonnet-20240229-v1:0"
 
-# S3 Configuration (leave empty to auto-generate bucket name)
+# IMPORTANT: Ensure you have requested access to the Bedrock models in your production AWS account
+# Production model access may require additional approval
+
+# =============================================================================
+# S3 Knowledge Base Configuration
+# =============================================================================
+# S3 bucket name for knowledge base data storage
+# For production, consider using a specific bucket name for consistency
+# Leave empty to auto-generate: novabot-prod-kb-{random}
 knowledge_base_s3_bucket = ""
 
-# Domain Configuration
-api_domain_name = "api-novabot.prod.nova-aicoe.com"
-root_domain_name = "nova-aicoe.com"
-certificate_arn = ""  # ARN of SSL certificate (leave empty to auto-create)
-enable_custom_domain = false  # Set to true to enable custom domain
-create_certificate = false    # Set to true to create SSL certificate with ACM
-create_hosted_zone = false    # Set to true to create new Route 53 hosted zone
-existing_hosted_zone_id = ""  # Required if create_hosted_zone = false and enable_custom_domain = true
+# Production Recommendation: Use versioning and lifecycle policies
+# The module automatically enables versioning and encryption
 
-# Additional Tags
+# =============================================================================
+# Domain and SSL Configuration
+# =============================================================================
+# Custom domain name for the API Gateway
+# Production environment uses: api-novabot.prod.nova-aicoe.com
+api_domain_name = "api-novabot.prod.nova-aicoe.com"
+
+# Root domain name for SSL certificate creation
+root_domain_name = "nova-aicoe.com"
+
+# SSL Certificate Configuration
+# Production Recommendation: Use ACM auto-creation for managed certificates
+certificate_arn = ""  # Leave empty to auto-create certificate
+
+# Auto-create SSL certificate (RECOMMENDED for production)
+create_certificate = true  # Set to true for production SSL certificate
+
+# Enable custom domain (REQUIRED for production)
+enable_custom_domain = true  # Should be true for production
+
+# Route 53 Configuration
+# Production Recommendation: Use existing hosted zone
+create_hosted_zone = false  # Typically false for production (use existing zone)
+
+# Existing hosted zone ID (REQUIRED for production with existing domain)
+existing_hosted_zone_id = ""  # e.g., "Z1234567890ABC" - MUST be provided for production
+
+# =============================================================================
+# Resource Tagging (Production)
+# =============================================================================
+# Production tags for proper resource management, cost tracking, and compliance
 tags = {
-  Owner       = "your-team"
-  CostCenter  = "engineering"
-  Application = "support-chatbot"
+  Owner       = "platform-team"      # Production team responsible
+  CostCenter  = "operations"         # Production cost center
+  Application = "support-chatbot"    # Application identifier
+  Environment = "production"         # Environment type
+  Project     = "novabot"           # Project name
+  ManagedBy   = "terraform"         # Management tool
+  Criticality = "high"              # Business criticality
+  Compliance  = "soc2"              # Compliance requirements
+  Backup      = "required"          # Backup policy
 }
+
+# =============================================================================
+# Production Deployment Checklist
+# =============================================================================
+# Before deploying to production, ensure:
+# 
+# [ ] AWS account has sufficient quotas and limits
+# [ ] Bedrock model access approved for production account
+# [ ] Route 53 hosted zone exists and is properly configured
+# [ ] Zendesk production account configured with API access
+# [ ] Monitoring and alerting configured
+# [ ] Backup and disaster recovery procedures in place
+# [ ] Security review completed
+# [ ] Load testing performed
+# [ ] Rollback procedures documented
+# 
+# Production Domain Setup (Recommended):
+# enable_custom_domain = true
+# create_certificate = true
+# create_hosted_zone = false
+# existing_hosted_zone_id = "YOUR_HOSTED_ZONE_ID"
+#
+# =============================================================================
