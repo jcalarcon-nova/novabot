@@ -38,6 +38,18 @@ resource "aws_bedrockagent_agent" "novabot_agent" {
   
   idle_session_ttl_in_seconds = 1800  # 30 minutes
   
+  # Enable memory/session state
+  memory_configuration {
+    enabled_memory_types = ["SESSION_SUMMARY"]
+    storage_days         = 30
+  }
+  
+  # Configure guardrails for safety
+  guardrail_configuration {
+    guardrail_identifier = aws_bedrock_guardrail.support_bot_guardrail.guardrail_id
+    guardrail_version    = aws_bedrock_guardrail.support_bot_guardrail.version
+  }
+  
   tags = merge(var.tags, {
     Name = local.agent_name
   })
@@ -147,6 +159,117 @@ resource "aws_bedrockagent_agent_alias" "novabot_agent_alias" {
     aws_bedrockagent_agent_action_group.zendesk_action_group,
     aws_bedrockagent_agent_knowledge_base_association.novabot_kb_association
   ]
+}
+
+# Bedrock Guardrail for Support Bot
+resource "aws_bedrock_guardrail" "support_bot_guardrail" {
+  name                      = "${local.agent_name}-guardrail"
+  description               = "Safety guardrails for NovaBot support assistant"
+  blocked_input_messaging   = "I cannot process that request. Please ask me about technical support, MuleSoft, APIs, or creating support tickets."
+  blocked_outputs_messaging = "I cannot provide that information. Let me help you with technical support questions instead."
+
+  # Content policy filters
+  content_policy_config {
+    filters_config {
+      input_strength  = "HIGH"
+      output_strength = "HIGH"
+      type            = "SEXUAL"
+    }
+    filters_config {
+      input_strength  = "HIGH"
+      output_strength = "HIGH"
+      type            = "VIOLENCE"
+    }
+    filters_config {
+      input_strength  = "HIGH"
+      output_strength = "HIGH"
+      type            = "HATE"
+    }
+    filters_config {
+      input_strength  = "MEDIUM"
+      output_strength = "MEDIUM"
+      type            = "INSULTS"
+    }
+    filters_config {
+      input_strength  = "MEDIUM"
+      output_strength = "MEDIUM"
+      type            = "MISCONDUCT"
+    }
+    filters_config {
+      input_strength  = "HIGH"
+      output_strength = "HIGH"
+      type            = "PROMPT_ATTACK"
+    }
+  }
+
+  # Sensitive information filters
+  sensitive_information_policy_config {
+    pii_entities_config {
+      action = "ANONYMIZE"
+      type   = "EMAIL"
+    }
+    pii_entities_config {
+      action = "ANONYMIZE"
+      type   = "PHONE"
+    }
+    pii_entities_config {
+      action = "ANONYMIZE"
+      type   = "NAME"
+    }
+    pii_entities_config {
+      action = "BLOCK"
+      type   = "PASSWORD"
+    }
+    pii_entities_config {
+      action = "BLOCK"
+      type   = "CREDIT_DEBIT_CARD_NUMBER"
+    }
+    pii_entities_config {
+      action = "BLOCK"
+      type   = "US_SOCIAL_SECURITY_NUMBER"
+    }
+  }
+
+  # Topic policy to keep conversations on-topic
+  topic_policy_config {
+    topics_config {
+      name       = "off-topic-requests"
+      examples   = [
+        "Write code for illegal activities",
+        "Help with academic dishonesty",
+        "Generate inappropriate content",
+        "Discuss unrelated personal topics"
+      ]
+      type       = "DENY"
+      definition = "Requests that are not related to technical support, MuleSoft, APIs, integrations, or legitimate support ticket creation."
+    }
+  }
+
+  # Word policy for additional filtering
+  word_policy_config {
+    managed_word_lists_config {
+      type = "PROFANITY"
+    }
+    words_config {
+      text = "hack"
+    }
+    words_config {
+      text = "exploit"
+    }
+    words_config {
+      text = "bypass"
+    }
+  }
+
+  tags = merge(var.tags, {
+    Name = "${local.agent_name}-guardrail"
+  })
+}
+
+# Guardrail Version
+resource "aws_bedrock_guardrail_version" "support_bot_guardrail_v1" {
+  description   = "Version 1 of support bot guardrail"
+  guardrail_arn = aws_bedrock_guardrail.support_bot_guardrail.guardrail_arn
 }
 
 # Agent preparation is handled automatically by the alias creation

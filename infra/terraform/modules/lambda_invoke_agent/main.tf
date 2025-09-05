@@ -2,18 +2,39 @@
 locals {
   function_name = "${var.project_name}-${var.environment}-invoke-agent"
   lambda_source_path = "${path.root}/../../../../lambda/invoke_agent"
+  module_source_path = "${path.module}/src"
 }
 
 # Data source to check if Lambda source exists
 data "external" "lambda_build_check" {
   program = ["bash", "-c", <<-EOT
+    # Check if we have a built TypeScript version
     if [ -d "${local.lambda_source_path}/dist" ]; then
-      echo '{"build_exists": "true"}'
+      echo '{"build_exists": "true", "source_type": "typescript"}'
+    # Check if we have our module source
+    elif [ -f "${local.module_source_path}/index.js" ]; then
+      echo '{"build_exists": "true", "source_type": "module"}'
     else
-      echo '{"build_exists": "false"}'
+      echo '{"build_exists": "false", "source_type": "placeholder"}'
     fi
   EOT
   ]
+}
+
+# Install dependencies for module source
+resource "null_resource" "install_dependencies" {
+  count = data.external.lambda_build_check.result.source_type == "module" ? 1 : 0
+  
+  provisioner "local-exec" {
+    command = <<-EOT
+      cd ${local.module_source_path}
+      npm install --production
+    EOT
+  }
+
+  triggers = {
+    package_json = fileexists("${local.module_source_path}/package.json") ? filemd5("${local.module_source_path}/package.json") : "none"
+  }
 }
 
 # Create placeholder if source doesn't exist
@@ -73,10 +94,18 @@ data "archive_file" "lambda_zip" {
   type        = "zip"
   output_path = "${path.module}/invoke_agent.zip"
   
-  # Use built files if available, otherwise use placeholder
-  source_dir = data.external.lambda_build_check.result.build_exists == "true" ? "${local.lambda_source_path}/dist" : "${path.module}/placeholder"
+  # Use built files if available, module source, or placeholder
+  source_dir = (
+    data.external.lambda_build_check.result.source_type == "typescript" ? "${local.lambda_source_path}/dist" :
+    data.external.lambda_build_check.result.source_type == "module" ? local.module_source_path :
+    "${path.module}/placeholder"
+  )
   
-  depends_on = [null_resource.lambda_build, null_resource.create_placeholder]
+  depends_on = [
+    null_resource.lambda_build, 
+    null_resource.create_placeholder,
+    null_resource.install_dependencies
+  ]
 }
 
 # Lambda function for invoking Bedrock agent

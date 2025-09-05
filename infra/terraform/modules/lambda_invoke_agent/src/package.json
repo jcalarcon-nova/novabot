@@ -1,0 +1,27 @@
+{
+  "name": "novabot-invoke-agent",
+  "version": "1.0.0",
+  "description": "Lambda function to invoke Bedrock Agent for NovaBot",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.645.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145"
+  },
+  "scripts": {
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "bedrock",
+    "ai",
+    "chatbot"
+  ],
+  "author": "NovaBot Team",
+  "license": "MIT"
+}

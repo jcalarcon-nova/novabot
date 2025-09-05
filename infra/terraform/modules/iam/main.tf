@@ -211,7 +211,11 @@ resource "aws_iam_role_policy" "bedrock_agent_policy" {
       {
         Effect = "Allow"
         Action = [
-          "bedrock:InvokeModel"
+          "bedrock:InvokeModel",
+          "bedrock:InvokeAgent",
+          "bedrock:GetAgent",
+          "bedrock:GetAgentVersion",
+          "bedrock:GetAgentAlias"
         ]
         Resource = "*"
       },
@@ -219,7 +223,27 @@ resource "aws_iam_role_policy" "bedrock_agent_policy" {
         Effect = "Allow"
         Action = [
           "bedrock:Retrieve",
-          "bedrock:RetrieveAndGenerate"
+          "bedrock:RetrieveAndGenerate",
+          "bedrock:GetKnowledgeBase",
+          "bedrock:AssociateAgentKnowledgeBase"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:ApplyGuardrail",
+          "bedrock:GetGuardrail"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:CreateAgentMemory",
+          "bedrock:GetAgentMemory",
+          "bedrock:UpdateAgentMemory",
+          "bedrock:DeleteAgentMemory"
         ]
         Resource = "*"
       },
