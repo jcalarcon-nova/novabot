@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NovaBot Widget Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-controls {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .info {
+            margin: 10px 0;
+            padding: 10px;
+            background: #d1ecf1;
+            border-left: 4px solid #bee5eb;
+            border-radius: 4px;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 NovaBot Widget Test Page</h1>
+        
+        <div class="info">
+            <h3>API Configuration</h3>
+            <p><strong>Endpoint:</strong> <code id="api-endpoint">Loading...</code></p>
+            <p><strong>Streaming Support:</strong> <span id="streaming-support">✅ Enabled</span></p>
+            <p><strong>CORS Configuration:</strong> <span id="cors-status">✅ Configured</span></p>
+        </div>
+
+        <div class="test-controls">
+            <h3>Test Controls</h3>
+            <button class="test-button" onclick="openWidget()">Open Widget</button>
+            <button class="test-button" onclick="closeWidget()">Close Widget</button>
+            <button class="test-button" onclick="testMessage()">Send Test Message</button>
+            <button class="test-button" onclick="testStreaming()">Test Streaming</button>
+            <button class="test-button" onclick="clearChat()">Clear Chat</button>
+            <button class="test-button" onclick="checkEndpoint()">Check Endpoint</button>
+        </div>
+
+        <div class="test-controls">
+            <h3>Sample Messages</h3>
+            <button class="test-button" onclick="sendSampleMessage('Hello, can you help me with MuleSoft?')">MuleSoft Question</button>
+            <button class="test-button" onclick="sendSampleMessage('I need help with API integration errors')">API Integration</button>
+            <button class="test-button" onclick="sendSampleMessage('Create a support ticket for connection timeout issues')">Create Ticket</button>
+            <button class="test-button" onclick="sendSampleMessage('Show me DataWeave transformation examples')">DataWeave Examples</button>
+        </div>
+
+        <div id="status-messages"></div>
+
+        <div class="info">
+            <h3>Testing Instructions</h3>
+            <ol>
+                <li>Click "Open Widget" to launch the NovaBot chat interface</li>
+                <li>Use "Send Test Message" to verify basic functionality</li>
+                <li>Try "Test Streaming" to check real-time response streaming</li>
+                <li>Test sample messages to verify different use cases</li>
+                <li>Monitor browser console for detailed logs and error messages</li>
+            </ol>
+        </div>
+
+        <div class="info">
+            <h3>Expected Behavior</h3>
+            <ul>
+                <li><strong>REST API:</strong> Should use the new <code>api-novabot.dev.nova-aicoe.com</code> endpoint</li>
+                <li><strong>Streaming:</strong> Responses should appear character by character in real-time</li>
+                <li><strong>CORS:</strong> No CORS errors in browser console</li>
+                <li><strong>Fallback:</strong> Should gracefully handle non-streaming responses</li>
+                <li><strong>Error Handling:</strong> Clear error messages for different failure scenarios</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Load NovaBot Widget -->
+    <script>
+        // Configure NovaBot before loading
+        window.NOVABOT_AUTO_OPEN = false;
+        window.NOVABOT_ANALYTICS = true;
+    </script>
+    <script src="widget.js"></script>
+    <style>
+        /* Basic widget styling for testing */
+        .novabot-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .novabot-chat-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: transform 0.2s ease;
+        }
+
+        .novabot-chat-button:hover {
+            transform: scale(1.1);
+        }
+
+        .novabot-chat-panel {
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            transform: scale(0.8) translateY(20px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .novabot-chat-panel.open {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .novabot-chat-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .novabot-chat-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .novabot-close-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .novabot-chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .novabot-chat-input {
+            padding: 16px 20px;
+            border-top: 1px solid #e1e5e9;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .novabot-input-field {
+            flex: 1;
+            border: 1px solid #e1e5e9;
+            border-radius: 20px;
+            padding: 8px 16px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .novabot-send-button {
+            background: #667eea;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+        }
+
+        .novabot-message {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .novabot-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .novabot-message-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #f1f3f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .novabot-message.user .novabot-message-avatar {
+            background: #667eea;
+            color: white;
+        }
+
+        .novabot-message-wrapper {
+            flex: 1;
+            max-width: 80%;
+        }
+
+        .novabot-message-content {
+            background: #f1f3f4;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .novabot-message.user .novabot-message-content {
+            background: #667eea;
+            color: white;
+        }
+
+        .novabot-message-content.error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .novabot-message-time {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .novabot-citations {
+            margin-top: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .novabot-citation {
+            margin: 4px 0;
+        }
+
+        .novabot-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .novabot-action-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .novabot-action-button.secondary {
+            background: #6c757d;
+        }
+
+        .novabot-typing-indicator {
+            opacity: 0.8;
+        }
+
+        .novabot-typing {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f1f3f4;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+
+        .novabot-typing-dots {
+            display: flex;
+            gap: 2px;
+        }
+
+        .novabot-typing-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #666;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .novabot-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .novabot-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 480px) {
+            .novabot-chat-panel {
+                width: calc(100vw - 40px);
+                height: 80vh;
+                right: 20px;
+            }
+        }
+    </style>
+
+    <script>
+        function addStatusMessage(message, type = 'info') {
+            const statusDiv = document.getElementById('status-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `status ${type}`;
+            messageDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            statusDiv.appendChild(messageDiv);
+            statusDiv.scrollTop = statusDiv.scrollHeight;
+        }
+
+        function openWidget() {
+            if (window.NovaBot) {
+                window.NovaBot.open();
+                addStatusMessage('Widget opened', 'success');
+            } else {
+                addStatusMessage('NovaBot not loaded yet', 'error');
+            }
+        }
+
+        function closeWidget() {
+            if (window.NovaBot) {
+                window.NovaBot.close();
+                addStatusMessage('Widget closed', 'success');
+            }
+        }
+
+        function testMessage() {
+            if (window.NovaBot) {
+                window.NovaBot.sendMessage('Hello! This is a test message to verify the new REST API endpoint and streaming functionality.');
+                addStatusMessage('Test message sent', 'success');
+            } else {
+                addStatusMessage('NovaBot not loaded yet', 'error');
+            }
+        }
+
+        function testStreaming() {
+            if (window.NovaBot && window.NovaBot.testStreaming) {
+                window.NovaBot.testStreaming();
+                addStatusMessage('Streaming test initiated', 'success');
+            } else {
+                addStatusMessage('Streaming test not available', 'error');
+            }
+        }
+
+        function clearChat() {
+            if (window.NovaBot) {
+                window.NovaBot.clearChat();
+                addStatusMessage('Chat cleared', 'success');
+            }
+        }
+
+        function checkEndpoint() {
+            if (window.NovaBot && window.NovaBot.getEndpoint) {
+                const endpoint = window.NovaBot.getEndpoint();
+                addStatusMessage(`Current endpoint: ${endpoint}`, 'success');
+                console.log('NovaBot endpoint:', endpoint);
+            } else {
+                addStatusMessage('Cannot retrieve endpoint', 'error');
+            }
+        }
+
+        function sendSampleMessage(message) {
+            if (window.NovaBot) {
+                window.NovaBot.sendMessage(message);
+                addStatusMessage(`Sample message sent: "${message.substring(0, 50)}..."`, 'success');
+            } else {
+                addStatusMessage('NovaBot not loaded yet', 'error');
+            }
+        }
+
+        // Update API info when widget loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                if (window.NovaBot && window.NovaBot.getEndpoint) {
+                    document.getElementById('api-endpoint').textContent = window.NovaBot.getEndpoint();
+                    addStatusMessage('NovaBot widget loaded successfully', 'success');
+                } else {
+                    addStatusMessage('NovaBot widget failed to load', 'error');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
   
   // Configuration
   const CONFIG = {
-    API_ENDPOINT: window.NOVABOT_API_ENDPOINT || 'https://cxbhchnij5.execute-api.us-east-1.amazonaws.com/dev/invoke-agent',
+    API_ENDPOINT: window.NOVABOT_API_ENDPOINT || 'https://api-novabot.dev.nova-aicoe.com/invoke-agent',
     API_KEY: window.NOVABOT_API_KEY || null,
     WIDGET_TITLE: window.NOVABOT_TITLE || 'NovaBot Support',
     ENABLE_ANALYTICS: window.NOVABOT_ANALYTICS || false,
@@ -284,11 +284,13 @@
           timestamp: new Date().toISOString(),
           userAgent: navigator.userAgent,
           referrer: document.referrer || window.location.href
-        }
+        },
+        enableStreaming: true // Enable streaming for better UX
       };
       
       const headers = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream, application/json'
       };
       
       if (CONFIG.API_KEY) {
@@ -308,13 +310,16 @@
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        const data = await response.json();
-        
-        // Hide typing indicator
-        this.hideTypingIndicator();
-        
-        // Process response
-        this.processAPIResponse(data);
+        // Check if response is streaming (Server-Sent Events)
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('text/event-stream')) {
+          await this.handleStreamingResponse(response);
+        } else {
+          // Fallback to regular JSON response
+          const data = await response.json();
+          this.hideTypingIndicator();
+          this.processAPIResponse(data);
+        }
         
         // Reset retry count
         this.retryCount = 0;
@@ -322,7 +327,7 @@
         // Analytics
         this.trackEvent('message_sent', {
           input_length: inputText.length,
-          response_length: data.completion?.length || 0
+          streaming: contentType.includes('text/event-stream')
         });
         
       } catch (error) {
@@ -335,6 +340,81 @@
       }
     }
     
+    async handleStreamingResponse(response) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      
+      // Hide typing indicator and prepare for streaming
+      this.hideTypingIndicator();
+      
+      // Create message element for streaming
+      const messageId = this.addMessage('agent', '', {
+        timestamp: new Date(),
+        streaming: false // Don't use typewriter effect for real streaming
+      });
+      
+      const messageElement = this.elements.messages.querySelector(`[data-message-id="${messageId}"] .novabot-message-content`);
+      let buffer = '';
+      let fullText = '';
+      let citations = [];
+      let sessionId = null;
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          
+          // Keep the last incomplete line in buffer
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.trim() === '') continue;
+            
+            if (line.startsWith('data: ')) {
+              try {
+                const jsonData = JSON.parse(line.slice(6));
+                
+                if (jsonData.type === 'token') {
+                  fullText += jsonData.content;
+                  messageElement.innerHTML = this.formatMessageText(fullText);
+                  this.scrollToBottom();
+                } else if (jsonData.type === 'metadata') {
+                  if (jsonData.citations) citations = jsonData.citations;
+                  if (jsonData.sessionId) sessionId = jsonData.sessionId;
+                } else if (jsonData.type === 'complete') {
+                  // Streaming complete, add final metadata
+                  if (citations.length > 0) {
+                    this.addCitationsToMessage(messageId, citations);
+                  }
+                  if (sessionId && sessionId !== this.sessionId) {
+                    this.sessionId = sessionId;
+                  }
+                }
+              } catch (e) {
+                console.warn('Failed to parse streaming data:', line, e);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Streaming error:', error);
+        if (fullText === '') {
+          messageElement.innerHTML = this.formatMessageText("I apologize, there was an issue receiving the response. Please try again.");
+        }
+      }
+      
+      // Ensure we have some response
+      if (fullText === '') {
+        messageElement.innerHTML = this.formatMessageText("I apologize, but I didn't receive a proper response. Could you please try rephrasing your question?");
+      }
+      
+      this.scrollToBottom();
+    }
+    
     processAPIResponse(data) {
       const { completion, citations, traces, sessionId } = data;
       
@@ -344,7 +424,7 @@
       }
       
       if (completion) {
-        // Add agent message with streaming effect
+        // Add agent message with typewriter effect for non-streaming responses
         this.addMessage('agent', completion, {
           citations: citations,
           traces: traces,
@@ -380,6 +460,10 @@
         errorMessage += "Too many requests. Please wait a moment before trying again.";
       } else if (error.message.includes('500')) {
         errorMessage += "There's a server issue. Please try again in a few minutes.";
+      } else if (error.message.includes('CORS')) {
+        errorMessage += "There's a connection configuration issue. Please try refreshing the page.";
+      } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+        errorMessage += "Please check your internet connection and try again.";
       } else {
         errorMessage += "Please check your connection and try again.";
       }
@@ -398,7 +482,8 @@
       // Analytics
       this.trackEvent('api_error', {
         error_message: error.message,
-        retry_count: this.retryCount
+        retry_count: this.retryCount,
+        endpoint: CONFIG.API_ENDPOINT
       });
     }
     
@@ -615,6 +700,30 @@
       console.log('NovaBot Analytics:', eventData);
     }
     
+    addCitationsToMessage(messageId, citations) {
+      const messageElement = this.elements.messages.querySelector(`[data-message-id="${messageId}"]`);
+      if (!messageElement || !citations || citations.length === 0) return;
+      
+      const citationsHTML = `
+        <div class="novabot-citations">
+          <strong>Sources:</strong>
+          ${citations.map((citation, index) => `
+            <div class="novabot-citation">
+              ${index + 1}. <a href="${citation.url || '#'}" target="_blank" rel="noopener">
+                ${citation.title || 'Reference'}
+              </a>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      
+      const wrapperElement = messageElement.querySelector('.novabot-message-wrapper');
+      const timeElement = wrapperElement.querySelector('.novabot-message-time');
+      
+      // Insert citations before the timestamp
+      timeElement.insertAdjacentHTML('beforebegin', citationsHTML);
+    }
+    
     // Public API methods
     sendUserMessage(message) {
       this.elements.input.value = message;
@@ -629,6 +738,19 @@
     
     setAPIEndpoint(endpoint) {
       CONFIG.API_ENDPOINT = endpoint;
+    }
+    
+    // Test streaming capability
+    async testStreaming() {
+      console.log('Testing streaming capability...');
+      const testMessage = 'Test streaming response';
+      this.elements.input.value = testMessage;
+      await this.sendMessage();
+    }
+    
+    // Get current API endpoint
+    getAPIEndpoint() {
+      return CONFIG.API_ENDPOINT;
     }
     
     destroy() {
@@ -659,6 +781,8 @@
       sendMessage: (msg) => window.novaBotWidget.sendUserMessage(msg),
       clearChat: () => window.novaBotWidget.clearChat(),
       setEndpoint: (endpoint) => window.novaBotWidget.setAPIEndpoint(endpoint),
+      getEndpoint: () => window.novaBotWidget.getAPIEndpoint(),
+      testStreaming: () => window.novaBotWidget.testStreaming(),
       destroy: () => window.novaBotWidget.destroy()
     };
     
