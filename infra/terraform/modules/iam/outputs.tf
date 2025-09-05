@@ -20,12 +20,12 @@ output "knowledge_base_role_arn" {
 
 output "zendesk_secret_arn" {
   description = "ARN of the Zendesk credentials secret"
-  value       = aws_secretsmanager_secret.zendesk_credentials.arn
+  value       = local.zendesk_secret_arn
   sensitive   = true
 }
 
 output "zendesk_secret_name" {
-  description = "Name of the Zendesk credentials secret"
+  description = "Name of the Zendesk credentials secret"  
   value       = aws_secretsmanager_secret.zendesk_credentials.name
   sensitive   = true
 }

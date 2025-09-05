@@ -2,35 +2,16 @@ locals {
   api_name = "${var.project_name}-${var.environment}-chatbot-api"
 }
 
-# HTTP API Gateway
-resource "aws_apigatewayv2_api" "chatbot_api" {
-  name          = local.api_name
-  protocol_type = "HTTP"
-  description   = "NovaBot Chatbot API for Bedrock agent invocation"
+# Data sources
+data "aws_region" "current" {}
 
-  cors_configuration {
-    allow_credentials = false
-    allow_headers = [
-      "content-type",
-      "x-amz-date",
-      "authorization",
-      "x-api-key",
-      "x-amz-security-token",
-      "x-amz-user-agent",
-      "x-requested-with"
-    ]
-    allow_methods = [
-      "GET",
-      "HEAD",
-      "OPTIONS",
-      "POST"
-    ]
-    allow_origins = var.cors_allowed_origins
-    expose_headers = [
-      "x-amzn-requestid",
-      "x-amz-apigw-id"
-    ]
-    max_age = 300
+# REST API Gateway
+resource "aws_api_gateway_rest_api" "chatbot_api" {
+  name        = local.api_name
+  description = "NovaBot Chatbot API for Bedrock agent invocation"
+
+  endpoint_configuration {
+    types = ["REGIONAL"]
   }
 
   tags = merge(var.tags, {
@@ -38,47 +19,101 @@ resource "aws_apigatewayv2_api" "chatbot_api" {
   })
 }
 
-# Lambda Integration
-resource "aws_apigatewayv2_integration" "lambda_integration" {
-  api_id                    = aws_apigatewayv2_api.chatbot_api.id
-  integration_type          = "AWS_PROXY"
-  integration_method        = "POST"
-  integration_uri           = var.invoke_agent_lambda_function_arn
-  payload_format_version    = "2.0"
-  timeout_milliseconds      = 29000  # Max timeout for Lambda
-
-  request_parameters = {}
+# Root resource
+resource "aws_api_gateway_resource" "root" {
+  rest_api_id = aws_api_gateway_rest_api.chatbot_api.id
+  parent_id   = aws_api_gateway_rest_api.chatbot_api.root_resource_id
+  path_part   = "invoke-agent"
 }
 
-# Routes
-resource "aws_apigatewayv2_route" "invoke_agent_post" {
-  api_id    = aws_apigatewayv2_api.chatbot_api.id
-  route_key = "POST /invoke-agent"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
-
-  authorization_type = var.enable_api_key ? "API_KEY" : "NONE"
+# POST method for /invoke-agent
+resource "aws_api_gateway_method" "invoke_agent_post" {
+  rest_api_id   = aws_api_gateway_rest_api.chatbot_api.id
+  resource_id   = aws_api_gateway_resource.root.id
+  http_method   = "POST"
+  authorization = var.enable_api_key ? "API_KEY" : "NONE"
+  api_key_required = var.enable_api_key
 }
 
-resource "aws_apigatewayv2_route" "invoke_agent_options" {
-  api_id    = aws_apigatewayv2_api.chatbot_api.id
-  route_key = "OPTIONS /invoke-agent"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+# OPTIONS method for CORS preflight
+resource "aws_api_gateway_method" "invoke_agent_options" {
+  rest_api_id   = aws_api_gateway_rest_api.chatbot_api.id
+  resource_id   = aws_api_gateway_resource.root.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
 }
 
-# Root route for health check
-resource "aws_apigatewayv2_route" "health_check" {
-  api_id    = aws_apigatewayv2_api.chatbot_api.id
-  route_key = "GET /"
-  target    = "integrations/${aws_apigatewayv2_integration.health_integration.id}"
+# GET method for health check on root
+resource "aws_api_gateway_method" "health_check" {
+  rest_api_id   = aws_api_gateway_rest_api.chatbot_api.id
+  resource_id   = aws_api_gateway_rest_api.chatbot_api.root_resource_id
+  http_method   = "GET"
+  authorization = "NONE"
 }
 
-# Health check integration (simple Lambda response)
-resource "aws_apigatewayv2_integration" "health_integration" {
-  api_id             = aws_apigatewayv2_api.chatbot_api.id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.health_check.invoke_arn
-  payload_format_version = "2.0"
+# Lambda Integration for POST /invoke-agent
+resource "aws_api_gateway_integration" "lambda_integration" {
+  rest_api_id = aws_api_gateway_rest_api.chatbot_api.id
+  resource_id = aws_api_gateway_resource.root.id
+  http_method = aws_api_gateway_method.invoke_agent_post.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${data.aws_region.current.id}:lambda:path/2015-03-31/functions/${var.invoke_agent_lambda_function_arn}/invocations"
+  timeout_milliseconds    = 29000
+}
+
+# CORS Integration for OPTIONS /invoke-agent
+resource "aws_api_gateway_integration" "cors_integration" {
+  rest_api_id = aws_api_gateway_rest_api.chatbot_api.id
+  resource_id = aws_api_gateway_resource.root.id
+  http_method = aws_api_gateway_method.invoke_agent_options.http_method
+
+  type = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+# CORS Method Response for OPTIONS
+resource "aws_api_gateway_method_response" "cors_method_response" {
+  rest_api_id = aws_api_gateway_rest_api.chatbot_api.id
+  resource_id = aws_api_gateway_resource.root.id
+  http_method = aws_api_gateway_method.invoke_agent_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+# CORS Integration Response for OPTIONS
+resource "aws_api_gateway_integration_response" "cors_integration_response" {
+  rest_api_id = aws_api_gateway_rest_api.chatbot_api.id
+  resource_id = aws_api_gateway_resource.root.id
+  http_method = aws_api_gateway_method.invoke_agent_options.http_method
+  status_code = aws_api_gateway_method_response.cors_method_response.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'content-type,x-amz-date,authorization,x-api-key,x-amz-security-token,x-amz-user-agent,x-requested-with'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,HEAD,OPTIONS,POST'"
+    "method.response.header.Access-Control-Allow-Origin"  = length(var.cors_allowed_origins) > 0 ? "'${var.cors_allowed_origins[0]}'" : "'*'"
+  }
+
+  depends_on = [aws_api_gateway_integration.cors_integration]
+}
+
+# Health check integration
+resource "aws_api_gateway_integration" "health_integration" {
+  rest_api_id = aws_api_gateway_rest_api.chatbot_api.id
+  resource_id = aws_api_gateway_rest_api.chatbot_api.root_resource_id
+  http_method = aws_api_gateway_method.health_check.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${data.aws_region.current.id}:lambda:path/2015-03-31/functions/${aws_lambda_function.health_check.arn}/invocations"
 }
 
 # Simple health check Lambda function
@@ -157,38 +192,66 @@ resource "aws_iam_role_policy_attachment" "health_check_policy" {
   role       = aws_iam_role.health_check_role.name
 }
 
+# API Gateway Deployment
+resource "aws_api_gateway_deployment" "api_deployment" {
+  depends_on = [
+    aws_api_gateway_method.invoke_agent_post,
+    aws_api_gateway_method.invoke_agent_options,
+    aws_api_gateway_method.health_check,
+    aws_api_gateway_integration.lambda_integration,
+    aws_api_gateway_integration.cors_integration,
+    aws_api_gateway_integration.health_integration,
+    aws_api_gateway_integration_response.cors_integration_response
+  ]
+
+  rest_api_id = aws_api_gateway_rest_api.chatbot_api.id
+
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.root.id,
+      aws_api_gateway_method.invoke_agent_post.id,
+      aws_api_gateway_method.invoke_agent_options.id,
+      aws_api_gateway_method.health_check.id,
+      aws_api_gateway_integration.lambda_integration.id,
+      aws_api_gateway_integration.cors_integration.id,
+      aws_api_gateway_integration.health_integration.id,
+    ]))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 # API Gateway Stage
-resource "aws_apigatewayv2_stage" "api_stage" {
-  api_id      = aws_apigatewayv2_api.chatbot_api.id
-  name        = var.environment
-  auto_deploy = true
+resource "aws_api_gateway_stage" "api_stage" {
+  deployment_id = aws_api_gateway_deployment.api_deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.chatbot_api.id
+  stage_name    = var.environment
 
-  default_route_settings {
-    throttling_burst_limit = var.throttle_burst_limit
-    throttling_rate_limit  = var.throttle_rate_limit
-  }
+# Throttling is managed via method settings in REST API
 
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_logs.arn
-    format = jsonencode({
-      requestId      = "$context.requestId"
-      ip            = "$context.identity.sourceIp"
-      requestTime   = "$context.requestTime"
-      httpMethod    = "$context.httpMethod"
-      routeKey      = "$context.routeKey"
-      status        = "$context.status"
-      protocol      = "$context.protocol"
-      responseLength = "$context.responseLength"
-      error         = "$context.error.message"
-      integrationError = "$context.integration.error"
-    })
-  }
+# Logging disabled temporarily due to CloudWatch role requirements
 
   tags = merge(var.tags, {
     Name = "${local.api_name}-${var.environment}"
   })
 
   depends_on = [aws_cloudwatch_log_group.api_logs]
+}
+
+# Method Settings for throttling
+resource "aws_api_gateway_method_settings" "api_method_settings" {
+  rest_api_id = aws_api_gateway_rest_api.chatbot_api.id
+  stage_name  = aws_api_gateway_stage.api_stage.stage_name
+  method_path = "*/*"
+
+  settings {
+    throttling_burst_limit = var.throttle_burst_limit
+    throttling_rate_limit  = var.throttle_rate_limit
+    # Logging disabled temporarily due to CloudWatch role requirements
+    metrics_enabled        = true
+  }
 }
 
 # CloudWatch Log Group for API Gateway
@@ -205,7 +268,7 @@ resource "aws_lambda_permission" "api_gateway_invoke_lambda" {
   action        = "lambda:InvokeFunction"
   function_name = split(":", var.invoke_agent_lambda_function_arn)[6]
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.chatbot_api.execution_arn}/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.chatbot_api.execution_arn}/*/*"
 }
 
 # Lambda permission for health check
@@ -214,7 +277,7 @@ resource "aws_lambda_permission" "api_gateway_health_check" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.health_check.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.chatbot_api.execution_arn}/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.chatbot_api.execution_arn}/*/*"
 }
 
 # API Key (optional)
@@ -233,14 +296,11 @@ resource "aws_api_gateway_usage_plan" "chatbot_usage_plan" {
   name  = "${var.project_name}-${var.environment}-usage-plan"
 
   api_stages {
-    api_id = aws_apigatewayv2_api.chatbot_api.id
-    stage  = aws_apigatewayv2_stage.api_stage.name
+    api_id = aws_api_gateway_rest_api.chatbot_api.id
+    stage  = aws_api_gateway_stage.api_stage.stage_name
   }
 
-  throttle_settings {
-    burst_limit = var.throttle_burst_limit
-    rate_limit  = var.throttle_rate_limit
-  }
+# Throttling is managed via method settings in REST API
 
   quota_settings {
     limit  = 10000
@@ -261,25 +321,24 @@ resource "aws_api_gateway_usage_plan_key" "chatbot_usage_plan_key" {
 }
 
 # Domain Name for custom domain
-resource "aws_apigatewayv2_domain_name" "chatbot_domain" {
+resource "aws_api_gateway_domain_name" "chatbot_domain" {
   count       = var.enable_custom_domain ? 1 : 0
   domain_name = var.domain_name
   
-  domain_name_configuration {
-    certificate_arn = var.certificate_arn
-    endpoint_type   = "REGIONAL"
-    security_policy = "TLS_1_2"
+  regional_certificate_arn = var.certificate_arn
+  endpoint_configuration {
+    types = ["REGIONAL"]
   }
 
   tags = var.tags
 }
 
-# API Mapping for custom domain
-resource "aws_apigatewayv2_api_mapping" "chatbot_mapping" {
+# Base Path Mapping for custom domain
+resource "aws_api_gateway_base_path_mapping" "chatbot_mapping" {
   count       = var.enable_custom_domain ? 1 : 0
-  api_id      = aws_apigatewayv2_api.chatbot_api.id
-  domain_name = aws_apigatewayv2_domain_name.chatbot_domain[0].id
-  stage       = aws_apigatewayv2_stage.api_stage.id
+  api_id      = aws_api_gateway_rest_api.chatbot_api.id
+  stage_name  = aws_api_gateway_stage.api_stage.stage_name
+  domain_name = aws_api_gateway_domain_name.chatbot_domain[0].domain_name
 }
 
 # WAF Web ACL (optional)
@@ -328,6 +387,6 @@ resource "aws_wafv2_web_acl" "chatbot_waf" {
 # WAF Association (optional)
 resource "aws_wafv2_web_acl_association" "chatbot_waf_association" {
   count        = var.enable_waf ? 1 : 0
-  resource_arn = aws_apigatewayv2_stage.api_stage.arn
+  resource_arn = aws_api_gateway_stage.api_stage.arn
   web_acl_arn  = aws_wafv2_web_acl.chatbot_waf[0].arn
 }

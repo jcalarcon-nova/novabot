@@ -5,7 +5,14 @@
       "mcp__serena__onboarding",
       "mcp__serena__list_dir",
       "mcp__serena__write_memory",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(gh issue view:*)",
+      "mcp__serena__search_for_pattern",
+      "Bash(terraform init:*)",
+      "Bash(terraform:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx tsc:*)",
+      "mcp__serena__find_file"
     ],
     "deny": [],
     "ask": []

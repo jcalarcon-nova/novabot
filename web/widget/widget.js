@@ -3,7 +3,7 @@
   
   // Configuration
   const CONFIG = {
-    API_ENDPOINT: window.NOVABOT_API_ENDPOINT || 'https://api.novabot.example.com/invoke-agent',
+    API_ENDPOINT: window.NOVABOT_API_ENDPOINT || 'https://cxbhchnij5.execute-api.us-east-1.amazonaws.com/dev/invoke-agent',
     API_KEY: window.NOVABOT_API_KEY || null,
     WIDGET_TITLE: window.NOVABOT_TITLE || 'NovaBot Support',
     ENABLE_ANALYTICS: window.NOVABOT_ANALYTICS || false,

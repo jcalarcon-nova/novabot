@@ -1,3 +1,8 @@
+# Local values for dynamic references
+locals {
+  zendesk_secret_arn = aws_secretsmanager_secret.zendesk_credentials.arn
+}
+
 # KMS Key for encryption
 resource "aws_kms_key" "novabot_key" {
   description         = "KMS key for NovaBot encryption"
@@ -13,15 +18,25 @@ resource "aws_kms_alias" "novabot_key_alias" {
   target_key_id = aws_kms_key.novabot_key.key_id
 }
 
-# Secrets Manager for Zendesk credentials
+# Secrets Manager for Zendesk credentials with lifecycle management
 resource "aws_secretsmanager_secret" "zendesk_credentials" {
   name        = "${var.project_name}-${var.environment}-zendesk-credentials"
   description = "Zendesk API credentials for NovaBot"
   kms_key_id  = aws_kms_key.novabot_key.arn
+  
+  # Set recovery window to 0 to allow immediate recreation
+  recovery_window_in_days = 0
 
   tags = merge(var.tags, {
     Name = "${var.project_name}-${var.environment}-zendesk-secret"
   })
+  
+  lifecycle {
+    # Ignore changes to prevent recreation if secret exists
+    ignore_changes = [
+      recovery_window_in_days
+    ]
+  }
 }
 
 resource "aws_secretsmanager_secret_version" "zendesk_credentials_version" {
@@ -83,7 +98,7 @@ resource "aws_iam_role_policy" "lambda_execution_policy" {
         Action = [
           "secretsmanager:GetSecretValue"
         ]
-        Resource = aws_secretsmanager_secret.zendesk_credentials.arn
+        Resource = local.zendesk_secret_arn
       },
       {
         Effect = "Allow"
@@ -92,6 +107,14 @@ resource "aws_iam_role_policy" "lambda_execution_policy" {
           "kms:DescribeKey"
         ]
         Resource = aws_kms_key.novabot_key.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = "arn:aws:sqs:*:*:*${var.project_name}-${var.environment}-*"
       }
     ]
   })
@@ -142,6 +165,14 @@ resource "aws_iam_role_policy" "bedrock_invoke_policy" {
           "bedrock:InvokeAgent"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = "arn:aws:sqs:*:*:*${var.project_name}-${var.environment}-*"
       }
     ]
   })

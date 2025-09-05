@@ -1,36 +1,36 @@
 output "api_id" {
   description = "ID of the API Gateway"
-  value       = aws_apigatewayv2_api.chatbot_api.id
+  value       = aws_api_gateway_rest_api.chatbot_api.id
 }
 
 output "api_arn" {
   description = "ARN of the API Gateway"
-  value       = aws_apigatewayv2_api.chatbot_api.arn
+  value       = aws_api_gateway_rest_api.chatbot_api.arn
 }
 
 output "invoke_url" {
   description = "Invoke URL for the API Gateway"
-  value       = aws_apigatewayv2_stage.api_stage.invoke_url
+  value       = "https://${aws_api_gateway_rest_api.chatbot_api.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/${aws_api_gateway_stage.api_stage.stage_name}"
 }
 
 output "execution_arn" {
   description = "Execution ARN of the API Gateway"
-  value       = aws_apigatewayv2_api.chatbot_api.execution_arn
+  value       = aws_api_gateway_rest_api.chatbot_api.execution_arn
 }
 
 output "stage_name" {
   description = "Name of the API Gateway stage"
-  value       = aws_apigatewayv2_stage.api_stage.name
+  value       = aws_api_gateway_stage.api_stage.stage_name
 }
 
 output "invoke_agent_endpoint" {
   description = "Full endpoint URL for invoking the agent"
-  value       = "${aws_apigatewayv2_stage.api_stage.invoke_url}/invoke-agent"
+  value       = "https://${aws_api_gateway_rest_api.chatbot_api.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/${aws_api_gateway_stage.api_stage.stage_name}/invoke-agent"
 }
 
 output "health_check_endpoint" {
   description = "Health check endpoint URL"
-  value       = "${aws_apigatewayv2_stage.api_stage.invoke_url}/"
+  value       = "https://${aws_api_gateway_rest_api.chatbot_api.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/${aws_api_gateway_stage.api_stage.stage_name}/"
 }
 
 output "api_key_id" {
@@ -93,5 +93,5 @@ output "custom_domain_name" {
 
 output "custom_domain_target" {
   description = "Target domain name for custom domain (if enabled)"
-  value       = var.enable_custom_domain ? aws_apigatewayv2_domain_name.chatbot_domain[0].domain_name_configuration[0].target_domain_name : null
+  value       = var.enable_custom_domain ? aws_api_gateway_domain_name.chatbot_domain[0].regional_domain_name : null
 }

@@ -1,7 +1,7 @@
 # Local variables
 locals {
   function_name = "${var.project_name}-${var.environment}-zendesk-create-ticket"
-  lambda_source_path = "${path.root}/../../lambda/zendesk_create_ticket"
+  lambda_source_path = "${path.root}/../../../../lambda/zendesk_create_ticket"
 }
 
 # Data source to check if Lambda source exists
@@ -89,8 +89,7 @@ resource "aws_lambda_function" "zendesk_create_ticket" {
   environment {
     variables = {
       NODE_ENV                = var.environment
-      ZENDESK_SECRET_NAME     = split("/", var.zendesk_secret_arn)[6]
-      AWS_REGION              = data.aws_region.current.id
+      ZENDESK_SECRET_NAME     = split(":", var.zendesk_secret_arn)[6]
       LOG_LEVEL               = var.environment == "prod" ? "info" : "debug"
     }
   }

@@ -186,6 +186,47 @@ resource "aws_opensearchserverless_security_policy" "knowledge_base_encryption" 
   })
 }
 
+# Data access policy for OpenSearch Serverless
+resource "aws_opensearchserverless_access_policy" "knowledge_base_data_access" {
+  name = "${var.project_name}-${var.environment}-kb-data-access"
+  type = "data"
+  policy = jsonencode([
+    {
+      Rules = [
+        {
+          ResourceType = "collection"
+          Resource = [
+            "collection/${var.project_name}-${var.environment}-kb-collection"
+          ]
+          Permission = [
+            "aoss:CreateCollectionItems",
+            "aoss:DeleteCollectionItems",
+            "aoss:UpdateCollectionItems",
+            "aoss:DescribeCollectionItems"
+          ]
+        },
+        {
+          ResourceType = "index"
+          Resource = [
+            "index/${var.project_name}-${var.environment}-kb-collection/*"
+          ]
+          Permission = [
+            "aoss:CreateIndex",
+            "aoss:DeleteIndex",
+            "aoss:UpdateIndex",
+            "aoss:DescribeIndex",
+            "aoss:ReadDocument",
+            "aoss:WriteDocument"
+          ]
+        }
+      ]
+      Principal = [
+        var.knowledge_base_role_arn != "" ? var.knowledge_base_role_arn : aws_iam_role.knowledge_base_role[0].arn
+      ]
+    }
+  ])
+}
+
 resource "aws_opensearchserverless_security_policy" "knowledge_base_network" {
   name = "${var.project_name}-${var.environment}-kb-network"
   type = "network"

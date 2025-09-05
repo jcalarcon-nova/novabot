@@ -131,7 +131,7 @@ module "acm_certificate" {
 
 # Route 53 DNS Records (conditional - for API Gateway)
 resource "aws_route53_record" "api_gateway" {
-  count   = var.enable_custom_domain && module.api_gateway.custom_domain_target != null ? 1 : 0
+  count   = var.enable_custom_domain ? 1 : 0
   zone_id = var.create_hosted_zone ? module.route53_zone[0].hosted_zone_id : var.existing_hosted_zone_id
   name    = var.api_domain_name
   type    = "A"
