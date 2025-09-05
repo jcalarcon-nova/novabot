@@ -13,7 +13,8 @@ resource "aws_cloudwatch_dashboard" "novabot_dashboard" {
 
         properties = {
           metrics = [
-            ["AWS/Lambda", "Invocations", "FunctionName", var.lambda_function_names[0]]
+            for function_name in var.lambda_function_names : 
+            ["AWS/Lambda", "Invocations", "FunctionName", function_name]
           ]
           period = 300
           stat   = "Sum"
