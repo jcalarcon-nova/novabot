@@ -56,7 +56,7 @@ Configuring Datadog Mulesoft Integration - API Key and Customer Key - Customers 
 Resolution: 1. The API_key is not needed in the YAML configuration file. Users should either comment out the api_key line with '#' or remove it entirely.
 2. The customer_key is required and should be included in the configuration. The customer_key provided in this case is: 1zeskHCevo/BKfxhY6LK/ekOe/ZwWUzdJ9+Skae7jKA=
 3. To activate the product, customers need to provide their MuleSoft Anypoint Master Organization ID. This can be obtained by following the instructions at: https://help.mulesoft.com/s/article/How-to-know-my-Organization-ID-Org-ID-on-the-Anypoint-Platform
-4. For further information on the Datadog Mule® Integration configuration process, customers can refer to the documentation at: https://docs.ioconnectservices.com/
+4. For further information on the Datadog Mule(R) Integration configuration process, customers can refer to the documentation at: https://docs.ioconnectservices.com/
 5. If customers have any questions, they can contact support at support_ddp@ioconnectservices.com.",datadog-mulesoft,"activation,configuration,integration,mulesoft,datadog",low
 Using Datadog's Containerized Agent with Mulesoft Integration in ECS Fargate - A customer who has previously used Datadog's Mulesoft integration is moving to ECS Fargate and wants to know if they can still use the Datadog containerized agent while leveraging the Mulesoft integration in this new environment.,"Problem: A customer who has previously used Datadog's Mulesoft integration is moving to ECS Fargate and wants to know if they can still use the Datadog containerized agent while leveraging the Mulesoft integration in this new environment.
 
@@ -85,7 +85,7 @@ Resolution: 1. Containerized Environments: While it is possible to deploy the Da
 2. Runtime Fabric (RTF) Support: Metrics for this deployment model are limited to a few ones, check the Datadog Mulesoft Integration Public Documentation, https://docs.datadoghq.com/integrations/iocs-dmi/
 
 3. Available Metrics and Tools: Despite the limitations with CloudHub 2.0 specific metrics, users can still leverage other Anypoint Platform metrics and use the APM connector for instrumentation.",datadog-mulesoft,"activation,configuration,integration,mulesoft,datadog",low
-Datadog Mule® Integration Configuration and Activation Process - Customers who have recently purchased the Datadog Mule® Integration need guidance on how to configure and activate the product.,"Problem: Customers who have recently purchased the Datadog Mule® Integration need guidance on how to configure and activate the product.
+Datadog Mule(R) Integration Configuration and Activation Process - Customers who have recently purchased the Datadog Mule(R) Integration need guidance on how to configure and activate the product.,"Problem: Customers who have recently purchased the Datadog Mule(R) Integration need guidance on how to configure and activate the product.
 
 Resolution: 1. Review the Integration Documentation
 Visit the official documentation at https://docs.ioconnectservices.com/ for an overview of the integration features and requirements.
@@ -95,7 +95,7 @@ You will need your MuleSoft Anypoint Master Organization ID to proceed.
 
 To locate your Organization ID, follow the instructions in this MuleSoft support article.
 3. Submit Your Organization ID to Nova
-Nova is IO Connect’s internal provisioning system responsible for generating secure credentials.
+Nova is IO Connect's internal provisioning system responsible for generating secure credentials.
 
 Send your Organization ID to Nova via the onboarding form or by contacting your IO Connect representative.
 Nova will generate a unique customer_key associated with your organization.
@@ -104,7 +104,7 @@ Once you receive your customer_key, follow these steps:
 
 Open the conf.yaml file located in your integration deployment directory.
 
-Locate the authentication section (or create one if it doesn’t exist).
+Locate the authentication section (or create one if it doesn't exist).
 
 Add the following entry:
 
@@ -129,7 +129,7 @@ Ensure the customer_key is correctly entered and not expired.
 Verify network connectivity to Datadog endpoints.
 Check logs for authentication or configuration errors.
 Contact support at support_ddp@ioconnectservices.com with logs and configuration details.",datadog-mulesoft,"activation,configuration,integration,mulesoft,datadog",high
-Datadog Mule® Integration Configuration and Activation Process - New customers need guidance on how to configure and activate their Datadog Mule® Integration after purchase.,"Problem: New customers need guidance on how to configure and activate their Datadog Mule® Integration after purchase.
+Datadog Mule(R) Integration Configuration and Activation Process - New customers need guidance on how to configure and activate their Datadog Mule(R) Integration after purchase.,"Problem: New customers need guidance on how to configure and activate their Datadog Mule(R) Integration after purchase.
 
 Resolution: 1. Review the Integration Documentation
 Visit the official documentation at https://docs.ioconnectservices.com/ for an overview of the integration features and requirements.
@@ -139,7 +139,7 @@ You will need your MuleSoft Anypoint Master Organization ID to proceed.
 
 To locate your Organization ID, follow the instructions in this MuleSoft support article.
 3. Submit Your Organization ID to Nova
-Nova is IO Connect’s internal provisioning system responsible for generating secure credentials.
+Nova is IO Connect's internal provisioning system responsible for generating secure credentials.
 
 Send your Organization ID to Nova via the onboarding form or by contacting your IO Connect representative.
 Nova will generate a unique customer_key associated with your organization.
@@ -148,7 +148,7 @@ Once you receive your customer_key, follow these steps:
 
 Open the conf.yaml file located in your integration deployment directory.
 
-Locate the authentication section (or create one if it doesn’t exist).
+Locate the authentication section (or create one if it doesn't exist).
 
 Add the following entry:
 
@@ -185,11 +185,11 @@ Note: This integration does not support containerized environments (e.g., Docker
 The customer_key is required for the plugin to authenticate and operate correctly.
 
 Provide your MuleSoft Anypoint Master Organization ID to Nova via email.
-IO-Connect’s provisioning system, Nova, will generate a unique customer_key for your organization.
+IO-Connect's provisioning system, Nova, will generate a unique customer_key for your organization.
 3. Configuring the conf.yaml File
 Once you receive the customer_key, follow these steps:
 
-Locate the conf.yaml file in the plugin’s configuration directory.
+Locate the conf.yaml file in the plugin's configuration directory.
 
 4. Environment-Specific Considerations
 For Containerized MuleSoft Applications
@@ -3299,7 +3299,7 @@ Resolution: Compile a list of key resources for quick reference:
 
 2. Webinars:
    - DMI + DMI4APM (video): https://www.ioconnectservices.com/insight/monitoring-mule-applications-with-datadog
-   - Just APM (video): 'Webinar: Monitoring Mule® Applications with Datadog for Maximum Observability'
+   - Just APM (video): 'Webinar: Monitoring Mule(R) Applications with Datadog for Maximum Observability'
 
 3. Free Trials: Each product within the integration suite has its own free trial period available for customers who want to try it out.
 
@@ -3442,7 +3442,7 @@ For specific pricing details, refer to Datadog Marketplace where licensing is pu
 Documentation References:
 - Installation guide: https://docs.ioconnectservices.com/dmi/installation
 - System architecture: https://docs.ioconnectservices.com/dmi/systemarchitecture",datadog-mulesoft,"integration,mulesoft,datadog,deployment,network",low
-Datadog Mule® Integration Configuration and Activation Process - Customers who have recently purchased the Datadog Mule® Integration need guidance on how to configure and activate the product.,"Problem: Customers who have recently purchased the Datadog Mule® Integration need guidance on how to configure and activate the product.
+Datadog Mule(R) Integration Configuration and Activation Process - Customers who have recently purchased the Datadog Mule(R) Integration need guidance on how to configure and activate the product.,"Problem: Customers who have recently purchased the Datadog Mule(R) Integration need guidance on how to configure and activate the product.
 
 Resolution: DMI Configuration Process:
 1. Install DMI from Datadog Marketplace
@@ -3585,7 +3585,7 @@ Resolution: 1. Connection Process:
    - It's recommended to carefully plan your vCore allocation to optimize costs while ensuring adequate performance for your Mule applications.
 
 For more detailed information or specific setup instructions, it's advisable to contact the DataDog support team directly or consult the comprehensive documentation provided with the Mule Integration for DataDog.",datadog-mulesoft,"activation,configuration,integration,mulesoft,datadog",low
-"Mule® Integration Configuration Assistance - The customer's free trial of the Mule® integration is about to expire, but the integration has not been properly configured and no Mule metrics are reporting.","Problem: The customer's free trial of the Mule® integration is about to expire, but the integration has not been properly configured and no Mule metrics are reporting.
+"Mule(R) Integration Configuration Assistance - The customer's free trial of the Mule(R) integration is about to expire, but the integration has not been properly configured and no Mule metrics are reporting.","Problem: The customer's free trial of the Mule(R) integration is about to expire, but the integration has not been properly configured and no Mule metrics are reporting.
 
 Resolution: Trial Configuration Support:
 For trial configuration assistance, contact support_ddp@novacloud.io with Master Organization ID to receive customer_key required for proper DMI setup.
@@ -4489,7 +4489,7 @@ CloudHub 2.0 setup follows standard DMI configuration:
 2. Configure authentication credentials for CloudHub environment
 3. Contact support_ddp@novacloud.io for customer_key with Master Organization ID
 4. Set env_id for CloudHub 2.0 environment",datadog-mulesoft,"activation,configuration,mulesoft,datadog,authentication",high
-Datadog Mule® Integration for APM Configuration Resources - Customers who have recently purchased the Datadog Mule® Integration for APM may need guidance on how to configure and use the product effectively.,"Problem: Customers who have recently purchased the Datadog Mule® Integration for APM may need guidance on how to configure and use the product effectively.
+Datadog Mule(R) Integration for APM Configuration Resources - Customers who have recently purchased the Datadog Mule(R) Integration for APM may need guidance on how to configure and use the product effectively.,"Problem: Customers who have recently purchased the Datadog Mule(R) Integration for APM may need guidance on how to configure and use the product effectively.
 
 Resolution: APM Setup Requirements:
 APM requires dual configuration approach:
