@@ -90,7 +90,7 @@ resource "aws_lambda_function" "zendesk_create_ticket" {
     variables = {
       NODE_ENV                = var.environment
       ZENDESK_SECRET_NAME     = split("/", var.zendesk_secret_arn)[6]
-      AWS_REGION              = data.aws_region.current.name
+      AWS_REGION              = data.aws_region.current.id
       LOG_LEVEL               = var.environment == "prod" ? "info" : "debug"
     }
   }

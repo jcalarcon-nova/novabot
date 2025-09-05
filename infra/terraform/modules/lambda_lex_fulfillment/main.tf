@@ -99,7 +99,7 @@ resource "aws_lambda_function" "lex_fulfillment" {
   environment {
     variables = {
       NODE_ENV                  = var.environment
-      AWS_REGION               = data.aws_region.current.name
+      AWS_REGION               = data.aws_region.current.id
       LOG_LEVEL                = var.environment == "prod" ? "info" : "debug"
       BEDROCK_AGENT_ID         = var.bedrock_agent_id
       BEDROCK_AGENT_ALIAS_ID   = var.bedrock_agent_alias_id

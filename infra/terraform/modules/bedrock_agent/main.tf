@@ -54,6 +54,7 @@ resource "aws_bedrockagent_agent_knowledge_base_association" "novabot_kb_associa
 # Action Group for Zendesk Ticket Creation
 resource "aws_bedrockagent_agent_action_group" "zendesk_action_group" {
   agent_id                    = aws_bedrockagent_agent.novabot_agent.id
+  agent_version               = "DRAFT"
   action_group_name           = "ZendeskTicketActions"
   description                 = "Actions for creating and managing Zendesk support tickets"
   action_group_state          = "ENABLED"
@@ -148,18 +149,7 @@ resource "aws_bedrockagent_agent_alias" "novabot_agent_alias" {
   ]
 }
 
-# Prepare the agent for use
-resource "aws_bedrockagent_agent_action_group" "prepare_agent" {
-  count = 0  # This is a placeholder to ensure proper dependency ordering
-  
-  depends_on = [
-    aws_bedrockagent_agent_alias.novabot_agent_alias
-  ]
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
+# Agent preparation is handled automatically by the alias creation
 
 # Data source for current AWS region
 data "aws_region" "current" {}

@@ -23,8 +23,6 @@ resource "aws_cloudwatch_dashboard" "novabot_dashboard" {
       }
     ]
   })
-
-  tags = var.tags
 }
 
 # CloudWatch Alarms for Lambda errors
