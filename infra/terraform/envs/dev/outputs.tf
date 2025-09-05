@@ -4,7 +4,7 @@ output "bedrock_agent_id" {
 }
 
 output "bedrock_agent_alias_id" {
-  description = "Bedrock agent alias ID" 
+  description = "Bedrock agent alias ID"
   value       = module.bedrock_agent.agent_alias_id
 }
 

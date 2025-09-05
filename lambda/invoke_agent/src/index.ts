@@ -17,19 +17,11 @@ interface InvokeAgentRequest {
   enableTrace?: boolean;
 }
 
-interface StreamingResponse {
-  chunk?: string;
-  trace?: any;
-  citations?: any[];
-  sessionId?: string;
-  completion?: boolean;
-}
-
 interface BedrockAgentResponse {
   sessionId: string;
   completion: string;
-  traces?: any[];
-  citations?: any[];
+  traces?: unknown[];
+  citations?: unknown[];
 }
 
 function generateSessionId(): string {
@@ -38,15 +30,17 @@ function generateSessionId(): string {
   return `session_${timestamp}_${random}`;
 }
 
-function validateRequest(body: any): body is InvokeAgentRequest {
-  if (!body) return false;
+function validateRequest(body: unknown): body is InvokeAgentRequest {
+  if (!body || typeof body !== 'object') return false;
+  
+  const bodyObj = body as any;
   
   // sessionId is optional - will be generated if not provided
-  if (!body.inputText || typeof body.inputText !== 'string') {
+  if (!bodyObj.inputText || typeof bodyObj.inputText !== 'string') {
     return false;
   }
   
-  if (body.inputText.trim().length === 0) {
+  if (bodyObj.inputText.trim().length === 0) {
     return false;
   }
   
@@ -57,8 +51,8 @@ async function processBedrockAgentStream(
   response: InvokeAgentCommandOutput
 ): Promise<BedrockAgentResponse> {
   const chunks: string[] = [];
-  const traces: any[] = [];
-  const citations: any[] = [];
+  const traces: unknown[] = [];
+  const citations: unknown[] = [];
   let sessionId = '';
   
   if (!response.completion) {
@@ -78,8 +72,8 @@ async function processBedrockAgentStream(
         traces.push(chunk.trace);
       }
       
-      if (chunk.attribution?.citations) {
-        citations.push(...chunk.attribution.citations);
+      if (chunk.chunk?.attribution?.citations) {
+        citations.push(...chunk.chunk.attribution.citations);
       }
     }
     
@@ -107,17 +101,22 @@ function createCORSHeaders(): Record<string, string> {
   };
 }
 
-function createErrorResponse(statusCode: number, message: string, error?: any): APIGatewayProxyResult {
+function createErrorResponse(statusCode: number, message: string, error?: unknown): APIGatewayProxyResult {
   console.error('Error response:', { statusCode, message, error });
+  
+  const responseBody: any = {
+    error: message,
+    timestamp: new Date().toISOString()
+  };
+
+  if (error && process.env.NODE_ENV !== 'production') {
+    responseBody.details = error instanceof Error ? error.message : String(error);
+  }
   
   return {
     statusCode,
     headers: createCORSHeaders(),
-    body: JSON.stringify({
-      error: message,
-      timestamp: new Date().toISOString(),
-      ...(error && process.env.NODE_ENV !== 'production' && { details: error.message })
-    })
+    body: JSON.stringify(responseBody)
   };
 }
 
