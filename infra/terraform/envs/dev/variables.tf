@@ -43,7 +43,7 @@ variable "tags" {
 variable "api_domain_name" {
   description = "Custom domain name for the API Gateway"
   type        = string
-  default     = "dev.nova-aicoe.com"
+  default     = "api-novabot.dev.nova-aicoe.com"
 }
 
 variable "certificate_arn" {
@@ -54,6 +54,30 @@ variable "certificate_arn" {
 
 variable "enable_custom_domain" {
   description = "Whether to enable custom domain for API Gateway"
+  type        = bool
+  default     = false
+}
+
+variable "root_domain_name" {
+  description = "Root domain name (e.g., nova-aicoe.com)"
+  type        = string
+  default     = "nova-aicoe.com"
+}
+
+variable "create_hosted_zone" {
+  description = "Whether to create a new Route 53 hosted zone"
+  type        = bool
+  default     = false
+}
+
+variable "existing_hosted_zone_id" {
+  description = "ID of existing Route 53 hosted zone"
+  type        = string
+  default     = ""
+}
+
+variable "create_certificate" {
+  description = "Whether to create SSL certificate using ACM"
   type        = bool
   default     = false
 }
