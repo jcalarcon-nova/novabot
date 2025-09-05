@@ -18,6 +18,7 @@ The knowledge base consists of multiple CSV files, each containing structured Q&
 ### New Knowledge Base Files
 
 - **`datadog_mulesoft_integration.csv`** - ✨ **NEW**: Comprehensive Datadog MuleSoft Integration support knowledge base (270 entries)
+- **`datadog_mulesoft_web_docs.csv`** - ✨ **NEW**: Web documentation knowledge base for Datadog MuleSoft integrations (39 entries)
 
 ## File Format
 
@@ -79,6 +80,49 @@ The knowledge base was processed from raw support emails using an automated enha
 3. **Determines Priority**: Assigns priority levels based on keyword analysis and impact
 4. **Creates Q&A Format**: Converts structured data into question-answer pairs
 5. **Enhances Searchability**: Optimizes content for vector similarity search
+
+## Web Documentation Knowledge Base
+
+### Overview
+
+The new `datadog_mulesoft_web_docs.csv` contains 39 documentation articles extracted from web scraping of official Datadog MuleSoft integration documentation. This complements the support ticket knowledge base with comprehensive technical documentation.
+
+### Content Coverage
+
+- **Configuration Guides**: Detailed setup and configuration instructions
+- **Overview Documentation**: Product overviews and feature explanations  
+- **Connector Information**: APM connector and integration specifics
+- **Monitoring Setup**: Dashboard and monitoring configuration
+- **Architecture Details**: System architecture and technical specifications
+
+### Statistics
+
+- **Total Entries**: 39 documentation articles
+- **Priority Distribution**:
+  - High Priority: 38 entries (97.4%)
+  - Medium Priority: 1 entry (2.6%)
+- **Content Types**: Configuration (26), Overview (10), Monitoring (8), Architecture (3)
+
+### Top Tags
+
+1. `datadog` (39) - All entries related to Datadog
+2. `mulesoft` (39) - All entries related to MuleSoft
+3. `documentation` (39) - All entries are documentation-based
+4. `configuration` (26) - Configuration and setup guides
+5. `apm` (17) - APM connector related content
+6. `connector` (13) - Connector-specific information
+7. `dashboard` (12) - Dashboard and visualization content
+8. `overview` (10) - Product overview documentation
+
+### Processing Pipeline
+
+The web documentation was processed using an automated enhancement pipeline that:
+
+1. **Content Analysis**: Identifies content type (overview, configuration, installation, etc.)
+2. **Question Generation**: Creates natural questions from documentation titles and content
+3. **Answer Formatting**: Cleans and formats documentation content for readability
+4. **Tag Assignment**: Generates relevant tags based on content analysis and keywords
+5. **Priority Assignment**: Assigns priority based on content type and importance
 
 ## Deployment
 
