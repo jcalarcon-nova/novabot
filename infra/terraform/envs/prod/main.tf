@@ -91,9 +91,26 @@ module "api_gateway" {
   environment                      = var.environment
   project_name                     = var.project_name
   invoke_agent_lambda_function_arn = module.lambda_invoke_agent.function_arn
+  domain_name                      = var.api_domain_name
+  certificate_arn                  = var.certificate_arn
+  enable_custom_domain             = var.enable_custom_domain
   tags                           = local.common_tags
   
   depends_on = [module.lambda_invoke_agent]
+}
+
+# Lambda permission for API Gateway (after both are created)
+resource "aws_lambda_permission" "allow_api_gateway_invoke_agent" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = module.lambda_invoke_agent.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.execution_arn}/*/*"
+
+  depends_on = [
+    module.api_gateway,
+    module.lambda_invoke_agent
+  ]
 }
 
 # Amazon Connect Scaffold (Optional)

@@ -85,3 +85,13 @@ output "cors_configuration" {
     ]
   }
 }
+
+output "custom_domain_name" {
+  description = "Custom domain name (if enabled)"
+  value       = var.enable_custom_domain ? var.domain_name : null
+}
+
+output "custom_domain_target" {
+  description = "Target domain name for custom domain (if enabled)"
+  value       = var.enable_custom_domain ? aws_apigatewayv2_domain_name.chatbot_domain[0].domain_name_configuration[0].target_domain_name : null
+}

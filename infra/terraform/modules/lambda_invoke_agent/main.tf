@@ -93,7 +93,7 @@ resource "aws_lambda_function" "invoke_agent" {
   environment {
     variables = {
       NODE_ENV                = var.environment
-      AWS_REGION              = data.aws_region.current.name
+      AWS_REGION              = data.aws_region.current.id
       LOG_LEVEL               = var.environment == "prod" ? "info" : "debug"
       BEDROCK_AGENT_ID        = var.bedrock_agent_id
       BEDROCK_AGENT_ALIAS_ID  = var.bedrock_agent_alias_id
@@ -134,6 +134,7 @@ resource "aws_sqs_queue" "invoke_agent_dlq" {
 
 # Lambda permission for API Gateway to invoke
 resource "aws_lambda_permission" "allow_api_gateway" {
+  count         = var.api_gateway_execution_arn != "" ? 1 : 0
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.invoke_agent.function_name

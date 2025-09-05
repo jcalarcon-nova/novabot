@@ -39,3 +39,21 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "api_domain_name" {
+  description = "Custom domain name for the API Gateway"
+  type        = string
+  default     = "dev.nova-aicoe.com"
+}
+
+variable "certificate_arn" {
+  description = "ARN of the SSL certificate for the custom domain"
+  type        = string
+  default     = ""
+}
+
+variable "enable_custom_domain" {
+  description = "Whether to enable custom domain for API Gateway"
+  type        = bool
+  default     = false
+}
