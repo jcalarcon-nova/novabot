@@ -66,14 +66,14 @@ certificate_arn = ""  # e.g., "arn:aws:acm:us-east-1:123456789012:certificate/12
 create_certificate = false  # Set to true to create SSL certificate with ACM
 
 # Custom Domain Configuration
-enable_custom_domain = false  # Set to true to enable custom domain for API Gateway
+enable_custom_domain = true  # Set to true to enable custom domain for API Gateway
 
 # Route 53 Configuration
 # Option 1: Create new hosted zone (set create_hosted_zone = true)
 create_hosted_zone = false  # Set to true to create new Route 53 hosted zone
 
 # Option 2: Use existing hosted zone (provide zone ID)
-existing_hosted_zone_id = ""  # e.g., "Z1234567890ABC" - required if create_hosted_zone = false and enable_custom_domain = true
+existing_hosted_zone_id = ""  # e.g., "Z00929461L4FKZPDEU0D0" - required if create_hosted_zone = false and enable_custom_domain = true
 
 # =============================================================================
 # Resource Tagging

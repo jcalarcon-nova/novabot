@@ -2,9 +2,6 @@
 # NovaBot Production Environment Configuration
 # =============================================================================
 # This file contains configuration for the NovaBot production environment.
-# Copy this file to terraform.tfvars and update values as needed.
-# 
-# IMPORTANT: Review all settings carefully for production deployment!
 
 # =============================================================================
 # AWS Configuration
@@ -35,12 +32,7 @@ zendesk_subdomain = "your-zendesk-subdomain"
 # =============================================================================
 # Bedrock model ID for the agent
 # Production recommendations:
-# - anthropic.claude-3-5-sonnet-20241022-v2:0 (Latest Claude 3.5 Sonnet - recommended)
-# - anthropic.claude-3-sonnet-20240229-v1:0 (Claude 3 Sonnet - stable)
 bedrock_agent_model = "anthropic.claude-3-sonnet-20240229-v1:0"
-
-# IMPORTANT: Ensure you have requested access to the Bedrock models in your production AWS account
-# Production model access may require additional approval
 
 # =============================================================================
 # S3 Knowledge Base Configuration
@@ -49,9 +41,6 @@ bedrock_agent_model = "anthropic.claude-3-sonnet-20240229-v1:0"
 # For production, consider using a specific bucket name for consistency
 # Leave empty to auto-generate: novabot-prod-kb-{random}
 knowledge_base_s3_bucket = ""
-
-# Production Recommendation: Use versioning and lifecycle policies
-# The module automatically enables versioning and encryption
 
 # =============================================================================
 # Domain and SSL Configuration
@@ -75,46 +64,23 @@ enable_custom_domain = true  # Should be true for production
 
 # Route 53 Configuration
 # Production Recommendation: Use existing hosted zone
-create_hosted_zone = false  # Typically false for production (use existing zone)
+create_hosted_zone = false  # Use existing hosted zone
 
-# Existing hosted zone ID (REQUIRED for production with existing domain)
-existing_hosted_zone_id = ""  # e.g., "Z00929461L4FKZPDEU0D0" - MUST be provided for production
+# Existing hosted zone ID for nova-aicoe.com (REQUIRED for production with existing domain)
+existing_hosted_zone_id = "Z00929461L4FKZPDEU0D0"
 
 # =============================================================================
 # Resource Tagging (Production)
 # =============================================================================
 # Production tags for proper resource management, cost tracking, and compliance
 tags = {
-  Owner       = "platform-team"      # Production team responsible
-  CostCenter  = "operations"         # Production cost center
-  Application = "support-chatbot"    # Application identifier
-  Environment = "production"         # Environment type
-  Project     = "novabot"           # Project name
-  ManagedBy   = "terraform"         # Management tool
-  Criticality = "high"              # Business criticality
-  Compliance  = "soc2"              # Compliance requirements
-  Backup      = "required"          # Backup policy
+  Owner       = "platform-team"
+  CostCenter  = "operations"
+  Application = "support-chatbot"
+  Environment = "production"
+  Project     = "novabot"
+  ManagedBy   = "terraform"
+  Criticality = "high"
+  Compliance  = "soc2"
+  Backup      = "required"
 }
-
-# =============================================================================
-# Production Deployment Checklist
-# =============================================================================
-# Before deploying to production, ensure:
-# 
-# [ ] AWS account has sufficient quotas and limits
-# [ ] Bedrock model access approved for production account
-# [ ] Route 53 hosted zone exists and is properly configured
-# [ ] Zendesk production account configured with API access
-# [ ] Monitoring and alerting configured
-# [ ] Backup and disaster recovery procedures in place
-# [ ] Security review completed
-# [ ] Load testing performed
-# [ ] Rollback procedures documented
-# 
-# Production Domain Setup (Recommended):
-# enable_custom_domain = true
-# create_certificate = true
-# create_hosted_zone = false
-# existing_hosted_zone_id = "YOUR_HOSTED_ZONE_ID"
-#
-# =============================================================================
