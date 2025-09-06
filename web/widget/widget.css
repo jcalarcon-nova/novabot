@@ -75,8 +75,10 @@
   position: absolute;
   bottom: 80px;
   right: 0;
-  width: 380px;
-  height: 520px;
+  width: 420px;
+  max-width: calc(100vw - 40px);
+  height: 560px;
+  max-height: calc(100vh - 120px);
   background: white;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 8px 25px rgba(0, 0, 0, 0.08);
@@ -85,6 +87,26 @@
   overflow: hidden;
   border: 1px solid var(--novabot-border-light);
   backdrop-filter: blur(20px);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+/* Responsive width breakpoints */
+@media (min-width: 768px) {
+  .novabot-chat-panel {
+    width: 460px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .novabot-chat-panel {
+    width: 480px;
+  }
+}
+
+/* Wide mode for long content */
+.novabot-chat-panel.wide-mode {
+  width: 520px;
+  max-width: calc(100vw - 40px);
 }
 
 .novabot-chat-panel.open {
@@ -142,7 +164,7 @@
 .novabot-chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -152,7 +174,22 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  max-width: 85%;
+  max-width: 90%;
+}
+
+/* Compact mode for long messages */
+.novabot-message.long-content {
+  max-width: 95%;
+}
+
+.novabot-message.long-content .novabot-message-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+
+.novabot-message.long-content {
+  gap: 6px;
 }
 
 .novabot-message.user {
@@ -184,16 +221,43 @@
 
 .novabot-message-content {
   background: var(--novabot-secondary);
-  padding: 14px 18px;
-  border-radius: 18px;
+  padding: 12px 16px;
+  border-radius: 16px;
   position: relative;
   word-wrap: break-word;
   word-break: break-word;
   white-space: pre-wrap;
-  line-height: 1.6;
+  line-height: 1.5;
   max-width: 100%;
   overflow-wrap: break-word;
   hyphens: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Enhanced formatting for long content */
+.novabot-message.long-content .novabot-message-content {
+  padding: 14px 18px;
+  line-height: 1.6;
+  border-radius: 12px;
+}
+
+/* Better bullet point spacing in long content */
+.novabot-message.long-content .novabot-bullet {
+  margin: 2px 0;
+  padding-left: 4px;
+}
+
+/* Improved list formatting */
+.novabot-message-content ul,
+.novabot-message-content ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.novabot-message-content li {
+  margin: 4px 0;
+  line-height: 1.4;
 }
 
 .novabot-message.user .novabot-message-content {
@@ -395,7 +459,8 @@
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 480px) {
+/* Enhanced mobile responsiveness */
+@media (max-width: 640px) {
   .novabot-widget {
     bottom: 10px;
     right: 10px;
@@ -403,15 +468,41 @@
   }
   
   .novabot-chat-panel {
-    width: 100%;
-    height: 80vh;
+    width: calc(100vw - 20px);
+    height: 85vh;
     bottom: 70px;
-    right: 0;
+    right: 10px;
+    max-width: none;
   }
   
   .novabot-chat-button {
-    width: 50px;
-    height: 50px;
+    width: 56px;
+    height: 56px;
+  }
+  
+  .novabot-chat-messages {
+    padding: 8px 12px;
+  }
+  
+  .novabot-message {
+    max-width: 95%;
+  }
+  
+  .novabot-message-content {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .novabot-message-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+  
+  .novabot-message {
+    gap: 6px;
   }
 }
 
@@ -456,9 +547,10 @@
 
 .novabot-bullet {
   display: block;
-  margin: 4px 0;
-  padding-left: 8px;
+  margin: 3px 0;
+  padding-left: 6px;
   color: var(--novabot-text);
+  line-height: 1.4;
 }
 
 .novabot-message-content strong {
@@ -475,10 +567,14 @@
   color: white;
 }
 
-/* Long Content Handling */
+/* Enhanced Long Content Handling */
 .novabot-message-content {
-  max-height: 400px;
+  max-height: 450px;
   overflow-y: auto;
+}
+
+.novabot-message.long-content .novabot-message-content {
+  max-height: 500px;
 }
 
 .novabot-message-content::-webkit-scrollbar {
@@ -511,3 +607,39 @@
 .novabot-chat-messages::-webkit-scrollbar-thumb:hover {
   background: var(--novabot-text-light);
 }
+/* Enhanced list formatting for better readability */
+.novabot-list {
+  margin: 6px 0 !important;
+  padding-left: 16px !important;
+}
+
+.novabot-list li {
+  margin: 2px 0 !important;
+  line-height: 1.5 !important;
+  list-style-type: disc;
+}
+
+/* Compact spacing for long content lists */
+.novabot-message.long-content .novabot-list {
+  margin: 4px 0 !important;
+  padding-left: 14px !important;
+}
+
+.novabot-message.long-content .novabot-list li {
+  margin: 1px 0 !important;
+  line-height: 1.4 !important;
+}
+
+/* Wide mode visual indicator */
+.novabot-chat-panel.wide-mode::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--novabot-gradient);
+  z-index: 1;
+  border-radius: 16px 16px 0 0;
+}
+

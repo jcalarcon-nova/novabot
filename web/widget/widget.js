@@ -22,6 +22,7 @@
       this.retryCount = 0;
       this.currentMessageId = 0;
       this.sessionTimeout = null;
+      this.isWideMode = false;
       
       this.init();
     }
@@ -514,6 +515,12 @@
       const messageEl = this.createMessageElement(message, showActions);
       this.elements.messages.appendChild(messageEl);
       
+      // Check if this is a long message and apply appropriate styling
+      this.handleLongContent(messageEl, text);
+      
+      // Update widget layout if needed
+      this.updateWidgetLayout();
+      
       // Scroll to bottom
       this.scrollToBottom();
       
@@ -647,6 +654,93 @@
       });
     }
     
+    handleLongContent(messageEl, text) {
+      // Criteria for long content:
+      // - More than 200 characters OR
+      // - Contains multiple bullet points OR
+      // - Contains multiple line breaks
+      const isLongContent = 
+        text.length > 200 || 
+        (text.match(/•/g) || []).length > 2 ||
+        (text.match(/\n/g) || []).length > 3;
+      
+      if (isLongContent) {
+        messageEl.classList.add('long-content');
+        
+        // Convert manual bullet points to proper HTML lists for better formatting
+        const contentEl = messageEl.querySelector('.novabot-message-content');
+        if (contentEl) {
+          this.improveListFormatting(contentEl);
+        }
+      }
+    }
+    
+    improveListFormatting(contentEl) {
+      let html = contentEl.innerHTML;
+      
+      // Convert bullet point patterns to proper lists
+      const bulletPatterns = [
+        /^([•\-\*]\s+.+?)(?=\n[•\-\*]\s+|\n\n|$)/gm,
+        /\n([•\-\*]\s+.+?)(?=\n[•\-\*]\s+|\n\n|$)/g
+      ];
+      
+      // Check if we have bullet points to convert
+      if (html.includes('•') || html.match(/\n[\-\*]\s+/)) {
+        // Group consecutive bullet points
+        html = html.replace(
+          /((?:[•\-\*]\s+.+?(?:<br>|\n))+)/g,
+          (match) => {
+            const items = match
+              .split(/(?:<br>|\n)/)
+              .filter(item => item.trim())
+              .map(item => item.replace(/^[•\-\*]\s*/, '').trim())
+              .filter(item => item.length > 0)
+              .map(item => `<li>${item}</li>`)
+              .join('');
+            
+            return items ? `<ul class="novabot-list">${items}</ul>` : match;
+          }
+        );
+        
+        contentEl.innerHTML = html;
+      }
+    }
+    
+    updateWidgetLayout() {
+      // Check if we should enable wide mode based on recent messages
+      const recentMessages = this.messages.slice(-3); // Check last 3 messages
+      const hasLongContent = recentMessages.some(msg => 
+        msg.text.length > 300 || 
+        (msg.text.match(/•/g) || []).length > 3
+      );
+      
+      if (hasLongContent && !this.isWideMode) {
+        this.enableWideMode();
+      } else if (!hasLongContent && this.isWideMode) {
+        // Only disable wide mode if no recent long content
+        setTimeout(() => this.disableWideMode(), 5000); // Delay to avoid flickering
+      }
+    }
+    
+    enableWideMode() {
+      this.isWideMode = true;
+      this.elements.chatPanel.classList.add('wide-mode');
+    }
+    
+    disableWideMode() {
+      // Check again before disabling
+      const recentMessages = this.messages.slice(-2);
+      const stillHasLongContent = recentMessages.some(msg => 
+        msg.text.length > 300 || 
+        (msg.text.match(/•/g) || []).length > 3
+      );
+      
+      if (!stillHasLongContent) {
+        this.isWideMode = false;
+        this.elements.chatPanel.classList.remove('wide-mode');
+      }
+    }
+    
     // Action handlers
     createTicket() {
       const ticketMessage = "🎫 **I'll help you create a support ticket!**\n\n" +
@@ -711,6 +805,7 @@
     clearChat() {
       this.messages = [];
       this.elements.messages.innerHTML = '';
+      this.disableWideMode();
       this.addWelcomeMessage();
     }
     
