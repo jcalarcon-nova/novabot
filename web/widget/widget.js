@@ -535,31 +535,15 @@
       const avatar = sender === 'user' ? 'U' : '🤖';
       const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       
+      // Citations/Sources section removed as per issue #19 requirements
       let citationsHTML = '';
-      if (citations && citations.length > 0) {
-        citationsHTML = `
-          <div class="novabot-citations">
-            <strong>Sources:</strong>
-            ${citations.map((citation, index) => `
-              <div class="novabot-citation">
-                ${index + 1}. <a href="${citation.url || '#'}" target="_blank" rel="noopener">
-                  ${citation.title || 'Reference'}
-                </a>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
       
       let actionsHTML = '';
       if (showActions && sender === 'agent') {
         actionsHTML = `
           <div class="novabot-actions">
-            <button class="novabot-action-button" onclick="window.novaBotWidget.createTicket()">
+            <button class="novabot-create-ticket-button" onclick="window.novaBotWidget.createTicket()">
               Create Support Ticket
-            </button>
-            <button class="novabot-action-button secondary" onclick="window.novaBotWidget.showExamples()">
-              Show Examples
             </button>
           </div>
         `;
@@ -579,16 +563,25 @@
     }
     
     formatMessageText(text) {
-      // Convert line breaks to HTML
-      let formatted = text.replace(/\n/g, '<br>');
+      // Convert line breaks to HTML with proper spacing
+      let formatted = text.replace(/\n\s*\n/g, '<br><br>').replace(/\n/g, '<br>');
       
-      // Convert URLs to links
+      // Convert URLs to links with better styling
       const urlRegex = /(https?:\/\/[^\s]+)/g;
-      formatted = formatted.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+      formatted = formatted.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener" class="novabot-link">$1</a>');
       
       // Convert email addresses to mailto links
       const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
-      formatted = formatted.replace(emailRegex, '<a href="mailto:$1">$1</a>');
+      formatted = formatted.replace(emailRegex, '<a href="mailto:$1" class="novabot-link">$1</a>');
+      
+      // Format code blocks (basic markdown-like syntax)
+      formatted = formatted.replace(/`([^`]+)`/g, '<code class="novabot-code">$1</code>');
+      
+      // Format bold text
+      formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      
+      // Format bullet points
+      formatted = formatted.replace(/^[•\-\*]\s+(.+)$/gm, '<span class="novabot-bullet">• $1</span>');
       
       return formatted;
     }
@@ -656,13 +649,16 @@
     
     // Action handlers
     createTicket() {
-      const ticketMessage = "I'll help you create a support ticket. Please provide:\n\n" +
-        "1. Your email address\n" +
-        "2. A brief subject line\n" +
-        "3. Detailed description of the issue\n\n" +
-        "You can also mention the priority level and any relevant version information.";
+      const ticketMessage = "🎫 **I'll help you create a support ticket!**\n\n" +
+        "Please provide the following information:\n\n" +
+        "• **Email address** - Where we should contact you\n" +
+        "• **Subject** - Brief summary of your issue\n" +
+        "• **Description** - Detailed explanation of the problem\n" +
+        "• **Priority** - Low, Medium, High, or Critical\n" +
+        "• **Version info** - Any relevant software versions\n\n" +
+        "Once you provide this information, I'll create the ticket for you right away! 🚀";
       
-      this.addMessage('agent', ticketMessage, { timestamp: new Date() });
+      this.addMessage('agent', ticketMessage, { timestamp: new Date(), streaming: true });
     }
     
     showExamples() {
@@ -701,27 +697,9 @@
     }
     
     addCitationsToMessage(messageId, citations) {
-      const messageElement = this.elements.messages.querySelector(`[data-message-id="${messageId}"]`);
-      if (!messageElement || !citations || citations.length === 0) return;
-      
-      const citationsHTML = `
-        <div class="novabot-citations">
-          <strong>Sources:</strong>
-          ${citations.map((citation, index) => `
-            <div class="novabot-citation">
-              ${index + 1}. <a href="${citation.url || '#'}" target="_blank" rel="noopener">
-                ${citation.title || 'Reference'}
-              </a>
-            </div>
-          `).join('')}
-        </div>
-      `;
-      
-      const wrapperElement = messageElement.querySelector('.novabot-message-wrapper');
-      const timeElement = wrapperElement.querySelector('.novabot-message-time');
-      
-      // Insert citations before the timestamp
-      timeElement.insertAdjacentHTML('beforebegin', citationsHTML);
+      // Citations/Sources section removed as per issue #19 requirements
+      // This method is kept for API compatibility but does nothing
+      return;
     }
     
     // Public API methods

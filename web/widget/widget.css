@@ -1,15 +1,22 @@
 /* NovaBot Web Widget Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 :root {
-  --novabot-primary: #0066cc;
-  --novabot-primary-dark: #0052a3;
-  --novabot-secondary: #f0f7ff;
-  --novabot-text: #333333;
-  --novabot-text-light: #666666;
-  --novabot-border: #e1e5e9;
+  --novabot-primary: #6366f1;
+  --novabot-primary-dark: #4f46e5;
+  --novabot-primary-light: #818cf8;
+  --novabot-secondary: #f8fafc;
+  --novabot-accent: #10b981;
+  --novabot-text: #1f2937;
+  --novabot-text-light: #6b7280;
+  --novabot-text-muted: #9ca3af;
+  --novabot-border: #e5e7eb;
+  --novabot-border-light: #f3f4f6;
   --novabot-shadow: rgba(0, 0, 0, 0.1);
-  --novabot-error: #dc3545;
-  --novabot-success: #28a745;
-  --novabot-warning: #ffc107;
+  --novabot-shadow-lg: rgba(0, 0, 0, 0.15);
+  --novabot-error: #ef4444;
+  --novabot-success: #10b981;
+  --novabot-warning: #f59e0b;
+  --novabot-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 }
 
 /* Widget Container */
@@ -18,31 +25,44 @@
   bottom: 20px;
   right: 20px;
   z-index: 10000;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--novabot-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Chat Button */
 .novabot-chat-button {
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  background-color: var(--novabot-primary);
+  background: var(--novabot-gradient);
   color: white;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 12px var(--novabot-shadow);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 .novabot-chat-button:hover {
-  background-color: var(--novabot-primary-dark);
-  transform: scale(1.1);
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 12px 35px rgba(99, 102, 241, 0.4);
+}
+
+.novabot-chat-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
 }
 
 .novabot-chat-button svg {
@@ -55,15 +75,16 @@
   position: absolute;
   bottom: 80px;
   right: 0;
-  width: 360px;
-  height: 500px;
+  width: 380px;
+  height: 520px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px var(--novabot-shadow);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 8px 25px rgba(0, 0, 0, 0.08);
   display: none;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--novabot-border);
+  border: 1px solid var(--novabot-border-light);
+  backdrop-filter: blur(20px);
 }
 
 .novabot-chat-panel.open {
@@ -72,18 +93,37 @@
 
 /* Chat Header */
 .novabot-chat-header {
-  background: var(--novabot-primary);
+  background: var(--novabot-gradient);
   color: white;
-  padding: 16px 20px;
+  padding: 20px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.novabot-chat-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
 }
 
 .novabot-chat-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.novabot-chat-header h3::before {
+  content: '🤖';
+  font-size: 18px;
 }
 
 .novabot-close-button {
@@ -144,15 +184,31 @@
 
 .novabot-message-content {
   background: var(--novabot-secondary);
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-radius: 18px;
   position: relative;
   word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .novabot-message.user .novabot-message-content {
-  background: var(--novabot-primary);
+  background: var(--novabot-gradient);
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.novabot-message.user .novabot-message-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
 }
 
 .novabot-message-time {
@@ -234,30 +290,42 @@
   flex-wrap: wrap;
 }
 
-.novabot-action-button {
-  background: var(--novabot-primary);
+.novabot-create-ticket-button {
+  background: var(--novabot-gradient);
   color: white;
   border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  position: relative;
+  overflow: hidden;
 }
 
-.novabot-action-button:hover {
-  background: var(--novabot-primary-dark);
+.novabot-create-ticket-button::before {
+  content: '🎫';
+  font-size: 14px;
 }
 
-.novabot-action-button.secondary {
-  background: transparent;
-  color: var(--novabot-primary);
-  border: 1px solid var(--novabot-primary);
+.novabot-create-ticket-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
 }
 
-.novabot-action-button.secondary:hover {
-  background: var(--novabot-secondary);
+.novabot-create-ticket-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
 }
+
 
 /* Chat Input */
 .novabot-chat-input {
@@ -270,33 +338,39 @@
 .novabot-input-field {
   flex: 1;
   border: 1px solid var(--novabot-border);
-  border-radius: 20px;
-  padding: 8px 16px;
+  border-radius: 24px;
+  padding: 12px 18px;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--novabot-secondary);
+  font-family: inherit;
 }
 
 .novabot-input-field:focus {
   border-color: var(--novabot-primary);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .novabot-send-button {
-  background: var(--novabot-primary);
+  background: var(--novabot-gradient);
   color: white;
   border: none;
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
 }
 
 .novabot-send-button:hover:not(:disabled) {
-  background: var(--novabot-primary-dark);
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
 }
 
 .novabot-send-button:disabled {
@@ -355,6 +429,69 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Enhanced Text Formatting */
+.novabot-link {
+  color: var(--novabot-primary) !important;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.novabot-link:hover {
+  color: var(--novabot-primary-dark) !important;
+  text-decoration: underline;
+}
+
+.novabot-code {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--novabot-primary-dark);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.novabot-bullet {
+  display: block;
+  margin: 4px 0;
+  padding-left: 8px;
+  color: var(--novabot-text);
+}
+
+.novabot-message-content strong {
+  font-weight: 600;
+  color: var(--novabot-text);
+}
+
+.novabot-message.user .novabot-message-content strong {
+  color: white;
+}
+
+.novabot-message.user .novabot-code {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Long Content Handling */
+.novabot-message-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.novabot-message-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.novabot-message-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.novabot-message-content::-webkit-scrollbar-thumb {
+  background: var(--novabot-border);
+  border-radius: 2px;
 }
 
 /* Scrollbar Styling */
