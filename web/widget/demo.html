@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NovaBot Widget - Issue #19 Improvements Demo</title>
+    <style>
+        body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 3rem;
+            opacity: 0.9;
+        }
+        .improvements {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 3rem;
+        }
+        .improvement {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .improvement h3 {
+            margin-top: 0;
+            color: #a5f3fc;
+        }
+        .test-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 8px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .test-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        .primary-button {
+            background: rgba(16, 185, 129, 0.3);
+            border-color: #10b981;
+        }
+        .primary-button:hover {
+            background: rgba(16, 185, 129, 0.5);
+        }
+        .center {
+            text-align: center;
+        }
+        .note {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #a5f3fc;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 NovaBot Widget</h1>
+        <p class="subtitle">GitHub Issue #19 Improvements Demo</p>
+        
+        <div class="improvements">
+            <div class="improvement">
+                <h3>✨ Modern Design</h3>
+                <p>• Updated to Inter font family</p>
+                <p>• Modern gradient colors</p>
+                <p>• Enhanced shadows and animations</p>
+                <p>• Improved visual hierarchy</p>
+            </div>
+            
+            <div class="improvement">
+                <h3>📱 Better Long Text</h3>
+                <p>• Scrollable message content</p>
+                <p>• Better text wrapping</p>
+                <p>• Enhanced formatting support</p>
+                <p>• Code blocks and bullet points</p>
+            </div>
+            
+            <div class="improvement">
+                <h3>🚫 Removed Sources</h3>
+                <p>• Citations section removed</p>
+                <p>• Cleaner message interface</p>
+                <p>• Focus on core content</p>
+                <p>• Simplified UI</p>
+            </div>
+            
+            <div class="improvement">
+                <h3>🎫 Enhanced Create Ticket</h3>
+                <p>• Beautiful gradient button</p>
+                <p>• Ticket emoji icon</p>
+                <p>• Better hover effects</p>
+                <p>• Improved messaging</p>
+            </div>
+            
+            <div class="improvement">
+                <h3>🧹 Show Examples Removed</h3>
+                <p>• Button completely removed</p>
+                <p>• Simplified action panel</p>
+                <p>• Cleaner user experience</p>
+                <p>• Focus on tickets</p>
+            </div>
+            
+            <div class="improvement">
+                <h3>🎨 Rich Text Formatting</h3>
+                <p>• Bold text support</p>
+                <p>• Inline code formatting</p>
+                <p>• Clickable links</p>
+                <p>• Better line spacing</p>
+            </div>
+        </div>
+        
+        <div class="center">
+            <button class="test-button primary-button" onclick="openWidget()">
+                🚀 Try the New Widget
+            </button>
+            <button class="test-button" onclick="sendLongMessage()">
+                📄 Test Long Response
+            </button>
+            <button class="test-button" onclick="testFormatting()">
+                🎨 Test Text Formatting
+            </button>
+            <button class="test-button" onclick="testTicketButton()">
+                🎫 Test Create Ticket
+            </button>
+        </div>
+        
+        <div class="note">
+            <h3>📋 Test Instructions</h3>
+            <p><strong>1. Try the New Widget:</strong> Opens the widget to see the modern design improvements</p>
+            <p><strong>2. Test Long Response:</strong> Sends a long message to test improved text handling</p>
+            <p><strong>3. Test Text Formatting:</strong> Tests bold, code, links, and bullet formatting</p>
+            <p><strong>4. Test Create Ticket:</strong> Tests the enhanced ticket creation button</p>
+            <p><strong>Note:</strong> The sources section has been removed and Show Examples button is no longer visible.</p>
+        </div>
+    </div>
+
+    <!-- NovaBot Widget -->
+    <link rel="stylesheet" href="widget.css">
+    <script>
+        window.NOVABOT_TITLE = 'NovaBot Support (Enhanced)';
+        window.NOVABOT_AUTO_OPEN = false;
+        window.NOVABOT_ANALYTICS = true;
+        window.NOVABOT_CSS_URL = 'widget.css';
+        // Use demo endpoint for testing
+        window.NOVABOT_API_ENDPOINT = 'https://api-novabot.dev.nova-aicoe.com/invoke-agent';
+    </script>
+    <script src="widget.js"></script>
+    
+    <script>
+        function openWidget() {
+            if (window.NovaBot) {
+                window.NovaBot.open();
+            } else {
+                alert('NovaBot widget not loaded yet. Please refresh the page.');
+            }
+        }
+        
+        function sendLongMessage() {
+            if (window.NovaBot) {
+                const longMessage = `This is a test of how the widget handles very long responses. The widget should now properly display long text with:
+
+• Improved text wrapping and formatting
+• Better line spacing and readability  
+• Scrollable content areas for very long messages
+• Support for multiple paragraphs and formatting
+
+The text should wrap nicely and not overflow the message container. The new design includes better typography with the Inter font family and improved color scheme.
+
+**Bold text** should work correctly, and \`inline code\` should be highlighted. Links like https://example.com should be clickable.
+
+This demonstrates the enhanced look and feel requested in issue #19.`;
+                
+                window.NovaBot.sendMessage(longMessage);
+                window.NovaBot.open();
+            }
+        }
+        
+        function testFormatting() {
+            if (window.NovaBot) {
+                const formattedMessage = `Testing **text formatting** features:
+
+• **Bold text** using markdown syntax
+• \`Inline code\` with proper highlighting  
+• Links: https://nova-aicoe.com should be clickable
+• Email: support@nova-aicoe.com should also work
+• Multiple bullet points for better readability
+
+This shows the enhanced text formatting capabilities added in issue #19.`;
+                
+                window.NovaBot.sendMessage(formattedMessage);
+                window.NovaBot.open();
+            }
+        }
+        
+        function testTicketButton() {
+            if (window.NovaBot) {
+                window.NovaBot.sendMessage('I need help creating a support ticket');
+                window.NovaBot.open();
+            }
+        }
+        
+        // Show loading confirmation
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                if (window.NovaBot) {
+                    console.log('✅ NovaBot widget loaded successfully with issue #19 improvements');
+                } else {
+                    console.error('❌ NovaBot widget failed to load');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
